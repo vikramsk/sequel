@@ -1,7 +1,8 @@
-
 #include <stdlib.h>
 #include <iostream>
 #include "Record.h"
+#include "cpptoml.h"
+
 using namespace std;
 
 extern "C" {
@@ -11,6 +12,15 @@ int yyparse(void);  // defined in y.tab.c
 extern struct AndList *final;
 
 int main() {
+    auto config = cpptoml::parse_file("config.toml");
+    auto filePath = config->get_as<string>("path");
+    int nameLength = filePath->length();
+
+    char fileName[nameLength + 1];
+    strcpy(fileName, filePath->c_str());
+
+    cout << fileName << endl;
+
     // try to parse the CNF
     cout << "Enter in your CNF: ";
     if (yyparse() != 0) {
@@ -19,7 +29,7 @@ int main() {
     }
 
     // suck up the schema from the file
-    Schema lineitem("catalog", "lineitem");
+    Schema lineitem("src/catalog", "lineitem");
 
     // grow the CNF expression from the parse tree
     CNF myComparison;
@@ -30,11 +40,12 @@ int main() {
     myComparison.Print();
 
     // now open up the text file and start procesing it
-    FILE *tableFile =
-        fopen("/Users/tars/CodeBase/projects/tpch-dbgen/lineitem.tbl", "r");
+    //"/Users/tars/CodeBase/projects/tpch-dbgen/lineitem.tbl"
+
+    FILE *tableFile = fopen(fileName, "r");
 
     Record temp;
-    Schema mySchema("catalog", "lineitem");
+    Schema mySchema("src/catalog", "lineitem");
 
     // char *bits = literal.GetBits ();
     // cout << " numbytes in rec " << ((int *) bits)[0] << endl;
