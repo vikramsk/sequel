@@ -29,7 +29,7 @@ int main() {
     }
 
     // suck up the schema from the file
-    Schema lineitem("src/catalog", "lineitem");
+    Schema lineitem("data/catalog", "lineitem");
 
     // grow the CNF expression from the parse tree
     CNF myComparison;
@@ -45,7 +45,7 @@ int main() {
     FILE *tableFile = fopen(fileName, "r");
 
     Record temp;
-    Schema mySchema("src/catalog", "lineitem");
+    Schema mySchema("data/catalog", "lineitem");
 
     // char *bits = literal.GetBits ();
     // cout << " numbytes in rec " << ((int *) bits)[0] << endl;

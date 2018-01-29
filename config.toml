@@ -1,2 +1,2 @@
-path = "/Users/tars/CodeBase/projects/sequel/data/10M/lineitem.tbl"
+path = "data/10M/lineitem.tbl"
 catalog = "data/catalog"
