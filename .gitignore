@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# Build Folder
+build/
+
 # Ignore tags created by etags, ctags, gtags (GNU global) and cscope
 TAGS
 .TAGS
