@@ -6,9 +6,9 @@ debug: main
 platform=$(shell uname)
 
 ifeq ($(platform),Linux)
-	tag = sed -n build/src/y.tab.c -e "s/  _attribute_ ((_unused))$$/# ifndef __cplusplus\n  __attribute_ ((_unused_));\n# endif/"
+	tag = 'sed -n build/src/y.tab.c -e "s/  _attribute_ ((_unused))$$/# ifndef __cplusplus\n  __attribute_ ((_unused_));\n# endif/"'
 else
-	tag = sed -i "" "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" build/src/y.tab.c 
+	tag = 'sed -i "" "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" build/src/y.tab.c"'
 endif
 
 BUILD_DIR ?= build
@@ -25,6 +25,8 @@ $(BUILD_DIR)/%.cc.o: %.cc
 	$(MKDIR_P) $(dir $@)
 	$(CC) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
+all: main test.out testsuite
+
 main: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/main.o
 	$(CC) $(OBJS) build/src/main.o  build/src/y.tab.o build/src/lex.yy.o -o build/$@
 
@@ -39,7 +41,7 @@ build/src/test.o: src/test.cpp
 	
 build/src/y.tab.o: src/Parser.y src/ParseTree.h
 	yacc -d src/Parser.y -o build/src/y.tab.c
-	$(tag)
+	$(shell $(tag))
 	g++ -c -Isrc/ build/src/y.tab.c 
 	mv y.tab.o build/src/
 
