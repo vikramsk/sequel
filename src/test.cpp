@@ -2,13 +2,14 @@
 #include <iostream>
 #include "DBFile.h"
 
+// TODO: move these path constants to config
 // make sure that the file path/dir information below is correct
-const char *dbfile_dir = "";  // dir where binary heap files should be stored
+const char *dbfile_dir = "build/dbfiles/";  // dir where binary heap files should be stored
 const char *tpch_dir =
-    "/Users/tars/CodeBase/projects/tpch-dbgen/";  // dir where dbgen tpch files
+    "data/10M/";  // dir where dbgen tpch files
                                                   // (extension *.tbl) can be
                                                   // found
-const char *catalog_path = "catalog";  // full path of the catalog file
+const char *catalog_path = "data/catalog";  // full path of the catalog file
 
 using namespace std;
 
@@ -24,8 +25,8 @@ void test1() {
     sprintf(tbl_path, "%s%s.tbl", tpch_dir, rel->name());
     cout << " tpch file will be loaded from " << tbl_path << endl;
 
-    dbfile.Load(*(rel->schema()), tbl_path);
-    dbfile.Close();
+    //dbfile.Load(*(rel->schema()), tbl_path);
+    //dbfile.Close();
 }
 
 // sequential scan of a DBfile

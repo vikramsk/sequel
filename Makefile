@@ -30,7 +30,7 @@ all: main test.out testsuite
 main: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/main.o
 	$(CC) $(OBJS) build/src/main.o  build/src/y.tab.o build/src/lex.yy.o -o build/$@
 
-test.out: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/test.o
+test.out: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/test.o dbfolder
 	$(CC) $(OBJS) build/src/test.o build/src/y.tab.o build/src/lex.yy.o -o build/test.out  -ll
 
 build/src/main.o: src/main.cpp
@@ -51,6 +51,8 @@ build/src/lex.yy.o: src/Lexer.l
 	gcc  -c -Isrc/ build/src/lex.yy.c
 	mv lex.yy.o build/src/
 
+dbfolder: 
+	mkdir -p build/dbfiles
 
 GTEST_DIR = include/googletest
 
@@ -95,8 +97,8 @@ gtest.a : gtest-all.o
 gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
-testsuite: $(OBJS) $(TEST_OBJS) gtest.a
-	$(CC) $(CXXFLAGS) -Isrc $^ -o $@
+testsuite: $(OBJS) $(TEST_OBJS) gtest.a dbfolder
+	$(CC) $(CXXFLAGS) -Isrc $(OBJS) $(TEST_OBJS) gtest.a -o $@
 	mv $@ build
 
 .PHONY: clean
