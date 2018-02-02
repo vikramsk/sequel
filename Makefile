@@ -96,7 +96,7 @@ gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
 testsuite: $(OBJS) $(TEST_OBJS) gtest.a
-	$(CC) -Isrc -lpthread $^ -o $@
+	$(CC) $(CXXFLAGS) -Isrc $^ -o $@
 	mv $@ build
 
 .PHONY: clean
