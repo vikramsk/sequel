@@ -33,6 +33,7 @@
 
 # Build Folder
 build/
+data/dbfiles/*.bin
 
 # Ignore tags created by etags, ctags, gtags (GNU global) and cscope
 TAGS
