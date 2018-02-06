@@ -39,9 +39,7 @@ int main() {
     // print out the comparison to the screen
     myComparison.Print();
 
-    // now open up the text file and start procesing it
-    //"/Users/tars/CodeBase/projects/tpch-dbgen/lineitem.tbl"
-
+    // now open up the text file and start processing it
     FILE *tableFile = fopen(fileName, "r");
 
     Record temp;
