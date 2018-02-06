@@ -6,7 +6,9 @@
 #include "ComparisonEngine.h"
 #include "DBFile.h"
 #include "Defs.h"
-#include <fstream>
+#include "stdlib.h"
+#include "string.h"
+
 
 // stub file .. replace it with your own DBFile.cc
 
@@ -14,29 +16,46 @@ DBFile::DBFile () {
 }
 
 int DBFile::Create (const char *f_path, fType f_type, void *startup) {
-    //TODO: Add switch case on fType
-    file.open(f_path, fstream::binary | fstream::trunc |fstream::out);
-    if(!file)
-        return 0;
-    else
-        return DBFile::Close();
+    char *pathStr = strdup(f_path);
+    dataFile.Open(0,pathStr);
+    free(pathStr);
+    return 1;
 }
 
 void DBFile::Load (Schema &f_schema, const char *loadpath) {
+    
+    // open up the text file and start processing it
+    FILE *tableFile = fopen(loadpath, "r");
+
+    Record temp;
+    Page *buffer = new Page();
+    off_t pageCount = 0;
+
+    // read in all of the records from the text file
+    while (temp.SuckNextRecord(&f_schema, tableFile) == 1) {
+        temp.Print(&f_schema);
+        int appendResult = buffer->Append(&temp);
+        if(appendResult == 0) { //indicates that the page is full
+            dataFile.AddPage(buffer,pageCount++); //write loaded buffer to file
+            buffer = new Page();
+            appendResult = buffer->Append(&temp);
+        }
+    }
+    dataFile.AddPage(buffer,pageCount);
 }
 
 int DBFile::Open (const char *f_path) {
-    file.open(f_path, fstream::binary | fstream::in | fstream::out);
-    return file.is_open() ? 1 : 0;
+    char *pathStr = strdup(f_path);
+    dataFile.Open(1,pathStr);
+    free(pathStr);
+    return 1;
 }
 
 void DBFile::MoveFirst () {
-    //TODO: Handle case where file wasn't opened before calling MoveFirst
-    file.seekg(ios::beg);
 }
 
 int DBFile::Close () {
-    file.close();
+    dataFile.Close();
     return 1;
 }
 

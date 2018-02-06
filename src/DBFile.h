@@ -7,7 +7,6 @@
 #include "File.h"
 #include "Comparison.h"
 #include "ComparisonEngine.h"
-#include <fstream>
 
 typedef enum {heap, sorted, tree} fType;
 
@@ -15,8 +14,8 @@ typedef enum {heap, sorted, tree} fType;
 
 class DBFile {
 
-private: 
-	fstream file;
+private:
+	File dataFile;
 
 public:
 	DBFile (); 
