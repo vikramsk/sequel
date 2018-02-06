@@ -13,6 +13,7 @@
 // stub file .. replace it with your own DBFile.cc
 
 DBFile::DBFile () {
+    buffer = new Page();
 }
 
 int DBFile::Create (const char *f_path, fType f_type, void *startup) {
@@ -28,7 +29,6 @@ void DBFile::Load (Schema &f_schema, const char *loadpath) {
     FILE *tableFile = fopen(loadpath, "r");
 
     Record temp;
-    Page *buffer = new Page();
     off_t pageCount = 0;
 
     // read in all of the records from the text file
@@ -37,11 +37,12 @@ void DBFile::Load (Schema &f_schema, const char *loadpath) {
         int appendResult = buffer->Append(&temp);
         if(appendResult == 0) { //indicates that the page is full
             dataFile.AddPage(buffer,pageCount++); //write loaded buffer to file
-            buffer = new Page();
-            appendResult = buffer->Append(&temp);
+            buffer->EmptyItOut();
+            buffer->Append(&temp);
         }
     }
-    dataFile.AddPage(buffer,pageCount);
+    dataFile.AddPage(buffer,pageCount); //write remaining records in buffer to file
+    buffer->EmptyItOut();
 }
 
 int DBFile::Open (const char *f_path) {
