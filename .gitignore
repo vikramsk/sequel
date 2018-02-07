@@ -51,3 +51,6 @@ cscope.files
 cscope.out
 cscope.in.out
 cscope.po.out
+
+# Ignore visual studio config files
+.vscode/

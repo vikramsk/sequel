@@ -44,15 +44,15 @@ TEST(HeapFileTest, Load) {
         char *pathStr = strdup(rel_ptr[i]->path());
         file.Open(1,pathStr);
         free(pathStr);
-        Page *buffer;
+        Page buffer;
         off_t noOfPages = file.GetLength()-1;
         ASSERT_GT(noOfPages,0);
         
         Record temp;
         for(off_t page=0;page<noOfPages;page++) {
-            file.GetPage(buffer,page);
-            ASSERT_EQ(buffer->GetFirst(&temp),1);
-            buffer->EmptyItOut();
+            file.GetPage(&buffer,page);
+            ASSERT_EQ(buffer.GetFirst(&temp),1);
+            buffer.EmptyItOut();
         }
     }
 }

@@ -16,7 +16,7 @@ class DBFile {
 
 private:
 	File dataFile;
-	Page *buffer;
+	Page buffer;
 
 public:
 	DBFile (); 
