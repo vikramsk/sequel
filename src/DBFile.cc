@@ -33,7 +33,6 @@ void DBFile::Load (Schema &f_schema, const char *loadpath) {
 
     // read in all of the records from the text file
     while (temp.SuckNextRecord(&f_schema, tableFile) == 1) {
-        temp.Print(&f_schema);
         int appendResult = buffer->Append(&temp);
         if(appendResult == 0) { //indicates that the page is full
             dataFile.AddPage(buffer,pageCount++); //write loaded buffer to file
