@@ -8,6 +8,7 @@
 #include "TwoWayList.h"
 #include "stdlib.h"
 #include "string.h"
+#include <iostream>
 
 DBFile::DBFile() { pageIndex = 0; }
 DBFile::~DBFile() {
@@ -33,13 +34,23 @@ void DBFile::bufferAppend(Record *rec) {
 }
 
 void DBFile::Load(Schema &f_schema, const char *loadpath) {
-    // open up the text file and start processing it
-    FILE *tableFile = fopen(loadpath, "r");
     if (mode == READ) buffer.EmptyItOut();
+
+    if (dataFile.GetLength()==-1) {
+        cout << "BAD : create/open the file to which you want to add a record\n";
+        exit(1);
+    }
+
+    if(dataFile.GetLength() == 0) pageIndex = 0;
+    else {
+        pageIndex = dataFile.GetLength()-2;
+        dataFile.GetPage(&buffer, pageIndex);
+    }
 
     mode = WRITE;
     Record temp;
-
+    // open up the text file and start processing it
+    FILE *tableFile = fopen(loadpath, "r");
     // read in all of the records from the text file
     while (temp.SuckNextRecord(&f_schema, tableFile) == 1) {
         bufferAppend(&temp);
@@ -79,10 +90,17 @@ void DBFile::Add(Record &rec) {
         bufferAppend(&rec);
         return;
     }
+    // mode = READ
+    if (dataFile.GetLength()==-1) {
+        cout << "BAD : create/open the file to which you want to add a record\n";
+        exit(1);
+    }
 
-    buffer.EmptyItOut();
-    pageIndex = dataFile.GetLength() - 2;
-    dataFile.GetPage(&buffer, pageIndex);
+    if(dataFile.GetLength() == 0) pageIndex = 0;
+    else {
+        pageIndex = dataFile.GetLength()-2;
+        dataFile.GetPage(&buffer, pageIndex);
+    }
     mode = WRITE;
     bufferAppend(&rec);
 }

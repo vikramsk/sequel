@@ -140,7 +140,7 @@ void Page ::FromBinary(char *bits) {
     delete temp;
 }
 
-File ::File() { curLength = 0; }
+File ::File() { curLength = -1; }
 
 File ::~File() {}
 

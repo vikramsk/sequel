@@ -56,6 +56,101 @@ TEST(HeapFileTest, Load) {
         ASSERT_EQ(buffer.GetFirst(&temp), 1);
         buffer.EmptyItOut();
     }
+    file.Close();
+}
+
+TEST(HeapFileTest, AddRecords) {
+    DBFile dbfile;
+    const char* fpath = "build/tests/region.bin";
+    remove(fpath);
+    
+    dbfile.Create(fpath, heap, NULL);
+    dbfile.Open(fpath);
+
+    Record temp;
+    Schema mySchema("data/catalog", "region");
+    FILE *tableFile = fopen("data/10M/region.tbl", "r");
+    int counter = 0;
+    while (temp.SuckNextRecord(&mySchema, tableFile) == 1) {
+        counter++;
+        dbfile.Add(temp);
+    }
+    ASSERT_GT(counter,0); //check if at least some records were read
+    dbfile.Close();
+    
+    File file;
+    char *pathStr = strdup(fpath);
+    file.Open(1, pathStr);
+    ASSERT_GT(file.GetLength(),1); //check if at least one page was written successfully
+    file.Close();
+}
+
+TEST(HeapFileTest, AddWithGetNext) {
+    DBFile dbfile;
+    const char* fpath = "build/tests/region.bin";
+    remove(fpath);
+    
+    dbfile.Create(fpath, heap, NULL);
+    dbfile.Open(fpath);
+
+    Record temp;
+    Schema mySchema("data/catalog", "region");
+    FILE *tableFile = fopen("data/10M/region.tbl", "r");
+    int counter = 0;
+    while (temp.SuckNextRecord(&mySchema, tableFile) == 1) {
+        counter++;
+        dbfile.Add(temp);
+    }
+    dbfile.MoveFirst();
+    while(dbfile.GetNext(temp)==1)  counter--;
+    ASSERT_EQ(counter,0); //check if all records were read into the file
+    dbfile.Close();
+}
+
+TEST(HeapFileTest, AddRecordsToExisting) {
+    DBFile dbfile;
+    const char* fpath = "build/tests/region.bin";
+    remove(fpath);
+    Schema mySchema("data/catalog", "region");
+    
+    dbfile.Create(fpath, heap, NULL);
+    dbfile.Load(mySchema,"data/10M/region.tbl");
+ 
+    Record temp;
+    FILE *tableFile = fopen("data/10M/region.tbl", "r");
+    int counter = 0;
+    while (temp.SuckNextRecord(&mySchema, tableFile) == 1) {
+        counter++;
+        dbfile.Add(temp);
+    }
+    dbfile.MoveFirst();
+    while(dbfile.GetNext(temp)==1)  counter--;
+    ASSERT_LT(counter,0); //check that counter is less than 0 as records read > records added
+    dbfile.Close();
+}
+
+TEST(HeapFileTest, LoadRecordsToExisting) {
+    DBFile dbfile;
+    const char* fpath = "build/tests/region.bin";
+    remove(fpath);
+    
+    dbfile.Create(fpath, heap, NULL);
+    Record temp;
+    Schema mySchema("data/catalog", "region");
+    FILE *tableFile = fopen("data/10M/region.tbl", "r");
+    int counter = 0;
+    while (temp.SuckNextRecord(&mySchema, tableFile) == 1) {
+        counter++;
+        dbfile.Add(temp);
+    }
+    dbfile.Close();
+
+    dbfile.Open(fpath);
+    dbfile.Load(mySchema,"data/10M/region.tbl");
+    dbfile.MoveFirst();
+    while(dbfile.GetNext(temp)==1) counter--;
+    ASSERT_LT(counter,0); //check that counter is less than 0 as records read > records loaded
+    dbfile.Close();
 }
 
 TEST(HeapFileTest, GetNextFromFirstRecord) { DBFile dbfile; }
