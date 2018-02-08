@@ -11,6 +11,7 @@ const char *dummyFile = "build/dbFiles/testFile.bin";
 
 TEST(HeapFileTest, Create) {
     DBFile dbfile;
+    remove("build/tests/test.bin");
     ASSERT_FALSE(ifstream("build/tests/test.bin").good());
     int ans;
     ans = dbfile.Create("build/tests/test.bin", heap, NULL);
