@@ -32,31 +32,29 @@ TEST(HeapFileTest, OpenClose) {
 TEST(HeapFileTest, Load) {
     // setup(catalog_path, dbfile_dir, tpch_dir);
     setup("data/catalog", "build/tests/", "data/10M/");
-    relation *rel_ptr[] = {n, r, c, p, ps, o, li};
+    relation *rel_ptr = li;
 
-    for (int i = 0; i < 7; i++) {
-        DBFile dbfile;
-        dbfile.Create(rel_ptr[i]->path(), heap, NULL);
+    DBFile dbfile;
+    dbfile.Create(rel_ptr->path(), heap, NULL);
 
-        char tbl_path[100];  // construct path of the tpch flat text file
-        sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel_ptr[i]->name());
-        dbfile.Load(*(rel_ptr[i]->schema()), tbl_path);
-        dbfile.Close();
+    char tbl_path[100];  // construct path of the tpch flat text file
+    sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel_ptr->name());
+    dbfile.Load(*(rel_ptr->schema()), tbl_path);
+    dbfile.Close();
 
-        File file;
-        char *pathStr = strdup(rel_ptr[i]->path());
-        file.Open(1, pathStr);
-        free(pathStr);
-        Page buffer;
-        off_t noOfPages = file.GetLength() - 1;
-        ASSERT_GT(noOfPages, 0);
+    File file;
+    char *pathStr = strdup(rel_ptr->path());
+    file.Open(1, pathStr);
+    free(pathStr);
+    Page buffer;
+    off_t noOfPages = file.GetLength() - 1;
+    ASSERT_GT(noOfPages, 0);
 
-        Record temp;
-        for (off_t page = 0; page < noOfPages; page++) {
-            file.GetPage(&buffer, page);
-            ASSERT_EQ(buffer.GetFirst(&temp), 1);
-            buffer.EmptyItOut();
-        }
+    Record temp;
+    for (off_t page = 0; page < noOfPages; page++) {
+        file.GetPage(&buffer, page);
+        ASSERT_EQ(buffer.GetFirst(&temp), 1);
+        buffer.EmptyItOut();
     }
 }
 
