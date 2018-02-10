@@ -1,6 +1,10 @@
 # sequel
 A SQL database written from the ground up.
 
+# Contributors
+
+ - Shikha Dharmendra Mehta (48519256)
+ - Vikram Sreekumar (51088960)
 
 # Directory structure
 The repository consists of the following:
@@ -21,3 +25,4 @@ The repository consists of the following:
 	 `./build/testsuite`
 - For running the main program, execute: 
 	 `./build/main`
+
