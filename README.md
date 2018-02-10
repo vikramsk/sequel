@@ -6,6 +6,7 @@ A SQL database written from the ground up.
 The repository consists of the following:
 
  - **src** - Consists of the source files.
+ - **data** - Consists of the TPC-H data files for running tests.
  - **include** - Consists of the dependencies(googletest, cpptoml).
  - **tests** - Consists of the google test scenarios.
  - **build** - This directory is created on running make and stores the build artifacts. 
