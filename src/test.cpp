@@ -1,15 +1,15 @@
 #include "test.h"
+#include <cpptoml.h>
 #include <iostream>
 #include "DBFile.h"
 
 // TODO: move these path constants to config
 // make sure that the file path/dir information below is correct
-const char *dbfile_dir = "build/dbfiles/";  // dir where binary heap files should be stored
-const char *tpch_dir =
-    "data/10M/";  // dir where dbgen tpch files
-                                                  // (extension *.tbl) can be
-                                                  // found
-const char *catalog_path = "data/catalog";  // full path of the catalog file
+char *dbfile_dir;    // dir where binary heap files should be stored
+char *tpch_dir;      //= "data/10M/";  // dir where dbgen tpch files
+                     // (extension *.tbl) can be
+                     // found
+char *catalog_path;  //= "data/catalog";  // full path of the catalog file
 
 using namespace std;
 
@@ -75,7 +75,25 @@ void test3() {
     dbfile.Close();
 }
 
+void parseConfig() {
+    auto config = cpptoml::parse_file("config.toml");
+
+    auto entry = config->get_as<string>("data");
+
+    tpch_dir = new char[entry->length() + 1];
+    strcpy(tpch_dir, entry->c_str());
+
+    entry = config->get_as<string>("catalog");
+    catalog_path = new char[entry->length() + 1];
+    strcpy(catalog_path, entry->c_str());
+
+    entry = config->get_as<string>("dbfiles");
+    dbfile_dir = new char[entry->length() + 1];
+    strcpy(dbfile_dir, entry->c_str());
+}
+
 int main() {
+    parseConfig();
     setup(catalog_path, dbfile_dir, tpch_dir);
 
     void (*test)();

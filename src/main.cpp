@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <iostream>
 #include "Record.h"
 #include "cpptoml.h"
@@ -13,14 +14,13 @@ extern struct AndList *final;
 
 int main() {
     auto config = cpptoml::parse_file("config.toml");
-    auto filePath = config->get_as<string>("path");
+    auto filePath = config->get_as<string>("data");
     int nameLength = filePath->length();
 
-    char fileName[nameLength + 1];
+    char fileName[nameLength + 20];
     strcpy(fileName, filePath->c_str());
-
+    strcat(fileName, "lineitem.tbl");
     cout << fileName << endl;
-
     // try to parse the CNF
     cout << "Enter in your CNF: ";
     if (yyparse() != 0) {

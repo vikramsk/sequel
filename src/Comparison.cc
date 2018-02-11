@@ -490,6 +490,10 @@ void CNF ::GrowFromParseTree(struct AndList *parseTree, Schema *mySchema,
                 exit(1);
             }
 
+            // cout << "DEBUG INFO LEFT: " << endl;
+            // cout << cnf.orList[whichAnd][whichOr].operand1 << endl;
+            // cout << cnf.orList[whichAnd][whichOr].whichAtt1 << endl;
+            // cout << typeLeft << endl;
             // now that we have dealt with the left operand, we need to deal
             // with the right operand
             if (myOr->left->right->code == NAME) {
@@ -527,6 +531,7 @@ void CNF ::GrowFromParseTree(struct AndList *parseTree, Schema *mySchema,
 
                 // see if it is a double
             } else if (myOr->left->right->code == DOUBLE) {
+                // cout << "Debug: " << Literal << endl;
                 cnf.orList[whichAnd][whichOr].operand2 = Literal;
                 cnf.orList[whichAnd][whichOr].whichAtt2 = numFieldsInLiteral;
                 AddLitToFile(numFieldsInLiteral, outRecFile, outSchemaFile,
@@ -540,6 +545,10 @@ void CNF ::GrowFromParseTree(struct AndList *parseTree, Schema *mySchema,
                 exit(1);
             }
 
+            // cout << "DEBUG INFO RIGHT: " << endl;
+            // cout << cnf.orList[whichAnd][whichOr].operand2 << endl;
+            // cout << cnf.orList[whichAnd][whichOr].whichAtt2 << endl;
+            // cout << typeRight << endl;
             // now we check to make sure that there was not a type mismatch
             if (typeLeft != typeRight) {
                 cerr << "ERROR! Type mismatch in CNF.  "

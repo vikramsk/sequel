@@ -1,2 +1,3 @@
-path = "data/10M/lineitem.tbl"
+data = "data/10M/"
+dbfiles = "build/dbfiles/"
 catalog = "data/catalog"
