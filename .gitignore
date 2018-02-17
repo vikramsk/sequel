@@ -54,3 +54,6 @@ cscope.po.out
 
 # Ignore visual studio config files
 .vscode/
+
+# Ignore Mac files 
+.DS_Store/
