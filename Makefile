@@ -34,10 +34,10 @@ test.out: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/test.o dbfolder
 	$(CC) $(CXXFLAGS) $(OBJS) build/src/test.o build/src/y.tab.o build/src/lex.yy.o -o build/test.out  -ll
 
 build/src/main.o: src/main.cpp
-	$(CC) $(CXXFLAGS) -g -c src/main.cpp -o $@
+	$(CC) -g -c src/main.cpp -o $@
 	
 build/src/test.o: src/test.cpp
-	$(CC) $(CXXFLAGS) -g -c src/test.cpp -o $@
+	$(CC) -g -c src/test.cpp -o $@
 	
 build/src/y.tab.o: src/Parser.y src/ParseTree.h
 	yacc -d src/Parser.y -o build/src/y.tab.c
