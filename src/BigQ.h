@@ -2,6 +2,7 @@
 #define BIGQ_H
 #include <pthread.h>
 #include <iostream>
+#include <vector>
 #include "File.h"
 #include "Pipe.h"
 #include "Record.h"

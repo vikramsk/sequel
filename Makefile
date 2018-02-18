@@ -28,16 +28,16 @@ $(BUILD_DIR)/%.cc.o: %.cc
 all: main test.out testsuite
 
 main: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/main.o
-	$(CC) $(OBJS) build/src/main.o  build/src/y.tab.o build/src/lex.yy.o -o build/$@
+	$(CC) $(CXXFLAGS) $(OBJS) build/src/main.o  build/src/y.tab.o build/src/lex.yy.o -o build/$@
 
 test.out: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/test.o dbfolder
-	$(CC) $(OBJS) build/src/test.o build/src/y.tab.o build/src/lex.yy.o -o build/test.out  -ll
+	$(CC) $(CXXFLAGS) $(OBJS) build/src/test.o build/src/y.tab.o build/src/lex.yy.o -o build/test.out  -ll
 
 build/src/main.o: src/main.cpp
-	$(CC) -g -c src/main.cpp -o $@
+	$(CC) $(CXXFLAGS) -g -c src/main.cpp -o $@
 	
 build/src/test.o: src/test.cpp
-	$(CC) -g -c src/test.cpp -o $@
+	$(CC) $(CXXFLAGS) -g -c src/test.cpp -o $@
 	
 build/src/y.tab.o: src/Parser.y src/ParseTree.h
 	yacc -d src/Parser.y -o build/src/y.tab.c
