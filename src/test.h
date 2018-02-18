@@ -43,6 +43,19 @@ class relation {
         cnf_pred.GrowFromParseTree(final, schema(),
                                    literal);  // constructs CNF predicate
     }
+    void get_sort_order(OrderMaker &sortorder) {
+        cout << "\n specify sort ordering (when done press ctrl-D):\n\t ";
+        if (yyparse() != 0) {
+            cout << " Error: can't parse your CNF.\n";
+            exit(1);
+        }
+        Record literal;
+        CNF sort_pred;
+        sort_pred.GrowFromParseTree(final, schema(),
+                                    literal);  // constructs CNF predicate
+        OrderMaker dummy;
+        sort_pred.GetSortOrders(sortorder, dummy);
+    }
 };
 
 const char *supplier = "supplier";
@@ -53,7 +66,7 @@ const char *customer = "customer";
 const char *orders = "orders";
 const char *region = "region";
 const char *lineitem = "lineitem";
-
+relation *rel;
 relation *s, *p, *ps, *n, *li, *r, *o, *c;
 
 void setup(char *catalog_path, char *dbfile_dir, char *tpch_dir) {
