@@ -15,7 +15,7 @@ class BigQ {
 
    private:
     pthread_t worker;
-    // void *sortRecords(void *voidArgs);
+    static void *sortRecords(void *voidArgs);
     void mergeRunsAndWrite(Pipe &out, OrderMaker &sortOrder);
     void createRuns(Pipe &in, OrderMaker &sortOrder, int runlen);
 };
