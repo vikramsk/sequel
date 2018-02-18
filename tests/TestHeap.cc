@@ -1,11 +1,17 @@
 #include <File.h>
 #include <Record.h>
+#include "DBFile.h"
+#include "BigQ.h"
+#include "Comparison.h"
+#include "Pipe.h"
+#include "test.h"
+
+
 #include <fstream>
 #include <iostream>
-#include "DBFile.h"
 #include "gtest/gtest.h"
 #include "string.h"
-#include "test.h"
+
 
 const char *dummyFile = "build/dbFiles/testFile.bin";
 
@@ -169,4 +175,24 @@ TEST(HeapFileTest, GetNextFromEmptyFile) {
     Record rec;
     int status = dbf.GetNext(rec);
     ASSERT_EQ(status, 0);
+}
+
+TEST(SortedFileTest, CreateWorker) {
+    int bufferSize = 5;
+    int runLength = 20;
+    Pipe* inputPipe = new Pipe(bufferSize);
+    Pipe* outputPipe = new Pipe(bufferSize);
+    OrderMaker* om = new OrderMaker();
+    BigQ* bigQInstance = new BigQ(*inputPipe, *outputPipe, *om, runLength);
+
+    void *status;
+    int rc = pthread_join(bigQInstance->worker,&status);
+    ASSERT_FALSE(rc);
+    /*
+    if (rc) {
+          cout<<"ERROR; return code from pthread_join() is " << rc << endl;
+          exit(-1);
+          }
+       cout << "Main: completed join with worker thread having a status of "<< (long)status << endl;
+    */
 }

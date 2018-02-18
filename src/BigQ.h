@@ -13,10 +13,9 @@ class BigQ {
    public:
     BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen);
     ~BigQ();
-
-   private:
     pthread_t worker;
 
+   private:
     File runs;
 
     // runHeads records the page offsets for
