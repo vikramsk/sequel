@@ -97,8 +97,8 @@ gtest.a : gtest-all.o
 gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
-testsuite: $(OBJS) $(TEST_OBJS) gtest.a dbfolder
-	$(CC) $(CXXFLAGS) -Isrc $(OBJS) $(TEST_OBJS) gtest.a -o $@
+testsuite: $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/lex.yy.o gtest.a dbfolder
+	$(CC) $(CXXFLAGS) -Isrc $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/lex.yy.o gtest.a -o $@
 	mv $@ build
 
 .PHONY: clean

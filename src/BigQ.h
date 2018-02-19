@@ -24,6 +24,7 @@ class BigQ {
 
     static void *sortRecords(void *voidArgs);
     void mergeRunsAndWrite(Pipe &out, OrderMaker &sortOrder);
+    off_t appendRunToFile(off_t currRunHead, vector<Record> &singleRun);
     void createRuns(Pipe &in, OrderMaker &sortOrder, int runlen);
 };
 
