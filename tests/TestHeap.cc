@@ -63,6 +63,7 @@ TEST(HeapFileTest, Load) {
         buffer.EmptyItOut();
     }
     file.Close();
+    cleanup();
 }
 
 TEST(HeapFileTest, AddRecords) {
@@ -178,15 +179,40 @@ TEST(HeapFileTest, GetNextFromEmptyFile) {
 }
 
 TEST(SortedFileTest, CreateWorker) {
-    int bufferSize = 5;
-    int runLength = 20;
+    setup("data/catalog", "build/tests/", "data/10M/");
+    relation *rel_ptr = li;
+    OrderMaker om;
+    rel_ptr->get_sort_order(om);
+    int bufferSize = 10;
+    int runLength = 5;
     Pipe* inputPipe = new Pipe(bufferSize);
     Pipe* outputPipe = new Pipe(bufferSize);
-    OrderMaker* om = new OrderMaker();
-    BigQ* bigQInstance = new BigQ(*inputPipe, *outputPipe, *om, runLength);
+    BigQ* bigQInstance = new BigQ(*inputPipe, *outputPipe, om, runLength);
+    char tbl_path[100];  // construct path of the tpch flat text file
+    sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel_ptr->name());
+    FILE *tblfile = fopen(tbl_path, "r");
+    int proc = 1, res = 1, tot = 0;
 
+    //while (proc && res) {
+    proc = -1;
+    Record temp;
+    int xx = 20000;
+    int numrecs = 5;
+    while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
+    ++proc < numrecs) {
+        inputPipe->Insert(&temp);
+        if (proc == xx) cerr << "\t ";
+        if (proc % xx == 0) cerr << ".";
+    }
+    tot += proc;
+    if (proc)   cout << "\n\t added " << proc << " recs..so far " << tot << endl;
+    //}
+    inputPipe->ShutDown();
+    cout << "\n create finished.. " << tot << " recs inserted\n";
+    fclose(tblfile);
     void *status;
     int rc = pthread_join(bigQInstance->worker,&status);
+    cout << "Not breaking here!" << "\n";
     ASSERT_FALSE(rc);
     /*
     if (rc) {
@@ -195,4 +221,6 @@ TEST(SortedFileTest, CreateWorker) {
           }
        cout << "Main: completed join with worker thread having a status of "<< (long)status << endl;
     */
+
+    cleanup();
 }
