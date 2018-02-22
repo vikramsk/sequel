@@ -11,6 +11,7 @@
 #include <iostream>
 #include "gtest/gtest.h"
 #include "string.h"
+#include <pthread.h>
 
 
 const char *dummyFile = "build/dbFiles/testFile.bin";
@@ -184,34 +185,32 @@ TEST(SortedFileTest, CreateWorker) {
     OrderMaker om;
     rel_ptr->get_sort_order(om);
     int bufferSize = 10;
-    int runLength = 5;
-    Pipe* inputPipe = new Pipe(bufferSize);
-    Pipe* outputPipe = new Pipe(bufferSize);
-    BigQ* bigQInstance = new BigQ(*inputPipe, *outputPipe, om, runLength);
+    int runLength = 1;
+    Pipe inputPipe(bufferSize);
+    Pipe outputPipe(bufferSize);
+    BigQ bigQInstance(inputPipe, outputPipe, om, runLength);
     char tbl_path[100];  // construct path of the tpch flat text file
     sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel_ptr->name());
     FILE *tblfile = fopen(tbl_path, "r");
-    int proc = 1, res = 1, tot = 0;
+    int proc = -1, res = 1, tot = 0;
 
-    //while (proc && res) {
-    proc = -1;
     Record temp;
     int xx = 20000;
-    int numrecs = 5;
+    int numrecs = 10;
     while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
     ++proc < numrecs) {
-        inputPipe->Insert(&temp);
+        inputPipe.Insert(&temp);
         if (proc == xx) cerr << "\t ";
         if (proc % xx == 0) cerr << ".";
     }
     tot += proc;
     if (proc)   cout << "\n\t added " << proc << " recs..so far " << tot << endl;
     //}
-    inputPipe->ShutDown();
+    inputPipe.ShutDown();
     cout << "\n create finished.. " << tot << " recs inserted\n";
-    fclose(tblfile);
+    ASSERT_EQ(0,fclose(tblfile));
     void *status;
-    int rc = pthread_join(bigQInstance->worker,&status);
+    int rc = pthread_join(bigQInstance.worker,&status);
     cout << "Not breaking here!" << "\n";
     ASSERT_FALSE(rc);
     /*
