@@ -4,25 +4,9 @@
 #include <iostream>
 #include "cpptoml.h"
 
-struct workerArgs {
-    BigQ *instance;
-    Pipe &in;
-    Pipe &out;
-    OrderMaker &sortOrder;
-    int runlen;
+void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder){}
 
-    workerArgs(BigQ *instance, Pipe &in, Pipe &out, OrderMaker &sortOrder,
-               int runlen)
-        : instance(instance),
-          in(in),
-          out(out),
-          sortOrder(sortOrder),
-          runlen(runlen) {}
-};
-
-void BigQ::mergeRunsAndWrite(Pipe &out, OrderMaker &sortOrder){}
-
-void BigQ::createRuns(Pipe &in, OrderMaker &sortOrder, int runlen) {
+void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     Record temp;
     int runLimit = runlen*PAGE_SIZE;
     //vector<Record> singleRun;
@@ -35,7 +19,7 @@ void BigQ::createRuns(Pipe &in, OrderMaker &sortOrder, int runlen) {
     //cout << "Successfully opened file!" << endl;
     
     Schema mySchema("data/catalog", "lineitem");
-    while(in.Remove(&temp)) {
+    while(in->Remove(&temp)) {
         if(runLimit <= 0) {
             //sort the current records in singleRun
 
@@ -80,14 +64,18 @@ void BigQ::createRuns(Pipe &in, OrderMaker &sortOrder, int runlen) {
 }
 
 void *BigQ::sortRecords(void *voidArgs) {
-    workerArgs *args = (workerArgs *)voidArgs;
-    args->instance->createRuns(args->in, args->sortOrder, args->runlen);
-    args->instance->mergeRunsAndWrite(args->out, args->sortOrder);
+    BigQ *args = (BigQ *)voidArgs;
+    args->createRuns(args->inPipe, args->sortOrdering, args->runlength);
+    args->mergeRunsAndWrite(args->outPipe, args->sortOrdering);
     pthread_exit(NULL);
 }
 
-BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen) {
-    workerArgs args(this, in, out, sortorder, runlen);
+BigQ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen) {
+    inPipe = &in;
+    outPipe = &out;
+    sortOrdering = &sortorder;
+    runlength = runlen;
+
     //runs.Open(0, "build/dbfiles/tpmms_runs.bin"); //create file
     //runs.Close();
 
@@ -95,7 +83,7 @@ BigQ ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen) {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-    pthread_create(&worker, NULL, BigQ::sortRecords, (void *) &args);
+    pthread_create(&worker, NULL, &BigQ::sortRecords, this);
     pthread_attr_destroy(&attr);
 
     // read data from in pipe sort them into runlen pages
