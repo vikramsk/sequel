@@ -17,14 +17,17 @@ class BigQ {
 
    private:
     File runs;
-
     // runHeads records the page offsets for
     // each run in the file.
     vector<off_t> runHeads;
+    Pipe *inPipe;
+    Pipe *outPipe;
+    OrderMaker *sortOrdering;
+    int runlength;
 
     static void *sortRecords(void *voidArgs);
-    void mergeRunsAndWrite(Pipe &out, OrderMaker &sortOrder);
-    void createRuns(Pipe &in, OrderMaker &sortOrder, int runlen);
+    void mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder);
+    void createRuns(Pipe *in, OrderMaker *sortOrder, int runlen);
 };
 
 #endif
