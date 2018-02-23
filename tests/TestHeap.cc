@@ -195,7 +195,7 @@ TEST(SortedFileTest, CreateWorker) {
     int proc = -1, res = 1, tot = 0;
 
     Record temp;
-    int numrecs = 500;
+    int numrecs = 10000;
     while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
     ++proc < numrecs) {
         inputPipe.Insert(&temp);

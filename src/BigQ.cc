@@ -12,7 +12,7 @@ struct SortHelper {
         this->ordering = ordering;
     }
     bool operator () (Record *a, Record *b) {
-        return comp.Compare(a, b,ordering)<=0; //Arranges in ascending order
+        return comp.Compare(a, b,ordering)<0; //Arranges in ascending order
     }
 };
 
