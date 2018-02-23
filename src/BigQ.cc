@@ -1,25 +1,24 @@
 #include "BigQ.h"
-#include "Defs.h"
 #include <pthread.h>
 #include <iostream>
+#include <vector>
 #include "cpptoml.h"
 
 void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder){}
 
 void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
-    Record temp;
-    int runLimit = runlen*PAGE_SIZE;
-    //vector<Record> singleRun;
-    //off_t currRunHead = 0;
+    int runLimit = runlen;
+    vector<Record *> singleRun;
+    off_t currRunHead = 0;
     //Initialize runs file
     //TODO: Pull from config file
     //char* runsFile = config->get_as<string>("dbfiles")+"tpmms_runs.bin";
     
-    //runs.Open(1, "build/dbfiles/tpmms_runs.bin");
-    //cout << "Successfully opened file!" << endl;
+    runs.Open(0, "build/dbfiles/tpmms_runs.bin");
     
+    Record *temp = new Record();
     Schema mySchema("data/catalog", "lineitem");
-    while(in->Remove(&temp)) {
+    while(in->Remove(temp)) {
         if(runLimit <= 0) {
             //sort the current records in singleRun
 
@@ -41,26 +40,26 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
             //singleRun.clear();
             runLimit = runlen;
         }
-        //cout<< "Outside while" <<endl;
-        //singleRun.push_back(temp);
-        temp.Print(&mySchema);
+        temp->Print(&mySchema);
+        singleRun.push_back(temp);
+        temp = new Record();
         runLimit--;
     }
-    //runHeads.push_back(currRunHead);
-    //Page buffer;
-    //off_t pageIndex = currRunHead; //append current run from given page index onwards
-    //cout<< "Out Append" <<endl;
-    //for (vector<Record>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
-        //temp = *it;
-        //int appendResult = buffer.Append(&temp); //dereferencing the pointer
-        //if (appendResult == 0) {  // indicates that the page is full
-        //    runs.AddPage(&buffer,pageIndex++);  // write loaded buffer to file
-        //    buffer.EmptyItOut();
-        //    buffer.Append(&temp);
-        //}
-    //}
-    //runs.AddPage(&buffer,pageIndex);  // write remaining records to file
-    //runs.Close();
+    free(temp);
+    runHeads.push_back(currRunHead);
+    Page buffer;
+    off_t pageIndex = currRunHead; //append current run from given page index onwards
+    for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
+        temp = *it;
+        int appendResult = buffer.Append(temp); //dereferencing the pointer
+        if (appendResult == 0) {  // indicates that the page is full
+            runs.AddPage(&buffer,pageIndex++);  // write loaded buffer to file
+            buffer.EmptyItOut();
+            buffer.Append(temp);
+        }
+    }
+    runs.AddPage(&buffer,pageIndex);  // write remaining records to file
+    runs.Close();
 }
 
 void *BigQ::sortRecords(void *voidArgs) {
