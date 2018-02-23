@@ -78,6 +78,25 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     Schema mySchema("data/catalog", "lineitem");
     while(in->Remove(&rec)) {
         if(pagesLeft <= 0) {
+            //sort the current records in singleRun
+
+            //write it out to file
+            runHeads.push_back(currRunHead);
+            Page writeBuffer;
+            Record *writeTemp;
+            cout<< singleRun.size() <<endl;
+            for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
+                writeTemp = *it;
+                //writeTemp->Print(&mySchema);
+                appendResult = writeBuffer.Append(writeTemp);
+                if (appendResult == 0) {  // indicates that the page is full
+                    runs.AddPage(&writeBuffer,currRunHead++);  // write loaded buffer to file
+                    writeBuffer.EmptyItOut();
+                    writeBuffer.Append(writeTemp);
+                }
+            }
+            runs.AddPage(&writeBuffer,currRunHead++);  // write remaining records to file
+            singleRun.clear();
             pagesLeft = runlen;
         }
         appendResult = buffer.Append(&rec);
@@ -99,19 +118,18 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     free(temp);
 
     runHeads.push_back(currRunHead);
-    off_t pageIndex = currRunHead; //append current run from given page index onwards
 
     for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
         temp = *it;
-        temp->Print(&mySchema);
+        //temp->Print(&mySchema);
         appendResult = buffer.Append(temp);
         if (appendResult == 0) {  // indicates that the page is full
-            runs.AddPage(&buffer,pageIndex++);  // write loaded buffer to file
+            runs.AddPage(&buffer,currRunHead++);  // write loaded buffer to file
             buffer.EmptyItOut();
             buffer.Append(temp);
         }
     }
-    runs.AddPage(&buffer,pageIndex);  // write remaining records to file
+    runs.AddPage(&buffer,currRunHead);  // write remaining records to file
     runs.Close();
 }
 
