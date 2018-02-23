@@ -5,9 +5,9 @@
 #include "cpptoml.h"
 
 void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder){}
-
+/*
 void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
-    int runLimit = runlen;
+    int pagesLeft = runlen;
     vector<Record *> singleRun;
     off_t currRunHead = 0;
     //Initialize runs file
@@ -17,9 +17,10 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     runs.Open(0, "build/dbfiles/tpmms_runs.bin");
     
     Record *temp = new Record();
+    Page buffer;
     Schema mySchema("data/catalog", "lineitem");
     while(in->Remove(temp)) {
-        if(runLimit <= 0) {
+        if(pagesLeft <= 0) {
             //sort the current records in singleRun
 
             //write it out to file
@@ -38,20 +39,72 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
             //runs.AddPage(&buffer,pageIndex++);  // write remaining records to file
             //currRunHead = pageIndex; // set start page of the next run
             //singleRun.clear();
-            runLimit = runlen;
+            pagesLeft = runlen;
         }
         temp->Print(&mySchema);
         singleRun.push_back(temp);
         temp = new Record();
-        runLimit--;
+        pagesLeft--;
     }
     free(temp);
     runHeads.push_back(currRunHead);
-    Page buffer;
+    
     off_t pageIndex = currRunHead; //append current run from given page index onwards
     for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
         temp = *it;
         int appendResult = buffer.Append(temp); //dereferencing the pointer
+        if (appendResult == 0) {  // indicates that the page is full
+            runs.AddPage(&buffer,pageIndex++);  // write loaded buffer to file
+            buffer.EmptyItOut();
+            buffer.Append(temp);
+        }
+    }
+    runs.AddPage(&buffer,pageIndex);  // write remaining records to file
+    runs.Close();
+}
+*/
+
+void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
+    int pagesLeft = runlen;
+    vector<Record *> singleRun;
+    off_t currRunHead = 0;
+    
+    runs.Open(0, "build/dbfiles/tpmms_runs.bin");
+    
+    Record rec;
+    Page buffer;
+    int appendResult = 0;
+    Record *temp = new Record();
+    Schema mySchema("data/catalog", "lineitem");
+    while(in->Remove(&rec)) {
+        if(pagesLeft <= 0) {
+            pagesLeft = runlen;
+        }
+        appendResult = buffer.Append(&rec);
+        if (appendResult == 0) {  // indicates that the page is full
+            // move loaded buffer to vector
+            while(buffer.GetFirst(temp)!=0) {
+                singleRun.push_back(temp);
+                temp = new Record();
+            }
+            pagesLeft--;
+            buffer.Append(&rec);
+        }
+    }
+    
+    while(buffer.GetFirst(temp)!=0) {
+        singleRun.push_back(temp);
+        temp = new Record();
+    }
+    free(temp);
+
+    runHeads.push_back(currRunHead);
+    off_t pageIndex = currRunHead; //append current run from given page index onwards
+
+    for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
+        temp = *it;
+        temp->Print(&mySchema);
+        appendResult = buffer.Append(temp);
         if (appendResult == 0) {  // indicates that the page is full
             runs.AddPage(&buffer,pageIndex++);  // write loaded buffer to file
             buffer.EmptyItOut();
