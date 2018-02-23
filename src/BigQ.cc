@@ -2,7 +2,19 @@
 #include <pthread.h>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include "cpptoml.h"
+
+struct SortHelper {
+    ComparisonEngine comp;
+    OrderMaker *ordering;
+    SortHelper(OrderMaker *ordering) { 
+        this->ordering = ordering;
+    }
+    bool operator () (Record *a, Record *b) {
+        return comp.Compare(a, b,ordering)<=0; //Arranges in ascending order
+    }
+};
 
 void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder){}
 
@@ -24,12 +36,12 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     while(in->Remove(&rec)) {
         if(pagesLeft <= 0) {
             //sort the current records in singleRun
+            sort(singleRun.begin(), singleRun.end(), SortHelper(sortOrder));
 
             //write it out to file
             runHeads.push_back(currRunHead);
             Page writeBuffer;
             Record *writeTemp;
-            cout<< singleRun.size() <<endl;
             for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
                 writeTemp = *it;
                 //writeTemp->Print(&mySchema);
@@ -62,8 +74,11 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     }
     free(temp);
 
-    runHeads.push_back(currRunHead);
+    //sort the current records in singleRun
+    sort(singleRun.begin(), singleRun.end(), SortHelper(sortOrder));
 
+    //write it out to file
+    runHeads.push_back(currRunHead);
     for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
         temp = *it;
         //temp->Print(&mySchema);
@@ -80,8 +95,13 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
 
 void *BigQ::sortRecords(void *voidArgs) {
     BigQ *args = (BigQ *)voidArgs;
+    // read data from in pipe sort them into runlen pages
     args->createRuns(args->inPipe, args->sortOrdering, args->runlength);
+    // construct priority queue over sorted runs and dump sorted data
+    // into the out pipe
     args->mergeRunsAndWrite(args->outPipe, args->sortOrdering);
+    // finally shut down the out pipe
+    args->outPipe->ShutDown();
     pthread_exit(NULL);
 }
 
@@ -91,23 +111,12 @@ BigQ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen) {
     sortOrdering = &sortorder;
     runlength = runlen;
 
-    //runs.Open(0, "build/dbfiles/tpmms_runs.bin"); //create file
-    //runs.Close();
-
     /* Initialize and set thread detached attribute */
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_create(&worker, NULL, &BigQ::sortRecords, this);
     pthread_attr_destroy(&attr);
-
-    // read data from in pipe sort them into runlen pages
-
-    // construct priority queue over sorted runs and dump sorted data
-    // into the out pipe
-
-    // finally shut down the out pipe
-    out.ShutDown();
 }
 
 BigQ::~BigQ() {}

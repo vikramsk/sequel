@@ -195,23 +195,17 @@ TEST(SortedFileTest, CreateWorker) {
     int proc = -1, res = 1, tot = 0;
 
     Record temp;
-    int xx = 20000;
-    int numrecs = 10;
+    int numrecs = 500;
     while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
     ++proc < numrecs) {
         inputPipe.Insert(&temp);
-        if (proc == xx) cerr << "\t ";
-        if (proc % xx == 0) cerr << ".";
     }
     tot += proc;
-    if (proc)   cout << "\n\t added " << proc << " recs..so far " << tot << endl;
-    //}
     inputPipe.ShutDown();
     cout << "\n create finished.. " << tot << " recs inserted\n";
     ASSERT_EQ(0,fclose(tblfile));
     void *status;
     int rc = pthread_join(bigQInstance.worker,&status);
-    cout << "Not breaking here!" << "\n";
     ASSERT_FALSE(rc);
     /*
     if (rc) {
@@ -220,6 +214,5 @@ TEST(SortedFileTest, CreateWorker) {
           }
        cout << "Main: completed join with worker thread having a status of "<< (long)status << endl;
     */
-
     cleanup();
 }
