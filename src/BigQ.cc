@@ -1,65 +1,220 @@
 #include "BigQ.h"
 #include <pthread.h>
-#include <iostream>
-#include <vector>
 #include <algorithm>
+#include <iostream>
+#include <queue>
+#include <vector>
 #include "cpptoml.h"
 
 struct SortHelper {
     ComparisonEngine comp;
     OrderMaker *ordering;
-    SortHelper(OrderMaker *ordering) { 
-        this->ordering = ordering;
-    }
-    bool operator () (Record *a, Record *b) {
-        return comp.Compare(a, b,ordering)<0; //Arranges in ascending order
+    SortHelper(OrderMaker *ordering) { this->ordering = ordering; }
+    bool operator()(Record *a, Record *b) {
+        return comp.Compare(a, b, ordering) < 0;  // Arranges in ascending order
     }
 };
 
-void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder){}
+struct recordTracker {
+    size_t runTrackerIndex;
+    Record *record;
+    recordTracker(size_t pi, Record *r) : runTrackerIndex(pi), record(r) {}
+};
+
+struct runTracker {
+    off_t pageIndex;
+    Page *page;
+    runTracker(off_t pi, Page *p) : pageIndex(pi), page(p) {}
+};
+
+struct MergeSortHelper {
+    ComparisonEngine comp;
+    OrderMaker *ordering;
+    bool operator()(recordTracker *a, recordTracker *b) {
+        return comp.Compare(a->record, b->record, ordering) < 0;
+    }
+
+   public:
+    MergeSortHelper(OrderMaker *ordering) : ordering(ordering) {}
+};
+
+// creates a vector of pages consisting of the first page of each run.
+vector<runTracker *> createRunTrackers(File runs, vector<off_t> runHeads,
+                                       vector<bool> &runStatus) {
+    vector<runTracker *> runTrackers;
+    for (vector<off_t>::iterator it = runHeads.begin(); it != runHeads.end();
+         ++it) {
+        Page runPage;
+        runs.GetPage(&runPage, *it);
+        runTrackers.push_back(new runTracker(*it, &runPage));
+        runStatus.push_back(false);
+    }
+    return runTrackers;
+}
+
+std::priority_queue<recordTracker *, std::vector<recordTracker *>,
+                    MergeSortHelper>
+initPriorityQueue(vector<runTracker *> runTrackers, OrderMaker *sortOrder) {
+    MergeSortHelper cmp(sortOrder);
+    std::priority_queue<recordTracker *, std::vector<recordTracker *>,
+                        MergeSortHelper>
+        pq(cmp);
+
+    // Assume each page has at least one record.
+    // This should be true because it's the first page of each run.
+    for (std::size_t i = 0; i != runTrackers.size(); i++) {
+        Record rec;
+        runTrackers[i]->page->GetFirst(&rec);
+        pq.push(new recordTracker(i, &rec));
+    }
+
+    return pq;
+}
+
+runTracker *getRunTracker(File *runs, off_t pageIndex) {
+    Page p;
+    runs->GetPage(&p, pageIndex);
+    return new runTracker(pageIndex, &p);
+}
+// getNextRecord fetches the next record using the parameters
+// and stores it in rec.
+// it returns the runTracker index of the returned record.
+// if no record is stored, it returns -1.
+bool getNextRecordInRun(Record *rec, vector<runTracker *> rts, File *runs,
+                        vector<off_t> runHeads, size_t runTrackerIndex) {
+    int status = rts[runTrackerIndex]->page->GetFirst(rec);
+    if (status) {
+        return true;
+    }
+
+    // if the current page is from the last run.
+    if (runTrackerIndex == runHeads.size() - 1) {
+        // The +1 is because there is an extra page stored in the file.
+        if (++rts[runTrackerIndex]->pageIndex + 1 != runs->GetLength()) {
+            rts[runTrackerIndex] =
+                getRunTracker(runs, rts[runTrackerIndex]->pageIndex);
+            rts[runTrackerIndex]->page->GetFirst(rec);
+            return true;
+        } else {
+            // last run is processed.
+            return false;
+        }
+    }
+
+    // if the selected run isn't the last and pageIndex + 1 for the
+    // current run isn't the start index of the next run.
+    if (++rts[runTrackerIndex]->pageIndex != runHeads[runTrackerIndex + 1]) {
+        rts[runTrackerIndex] =
+            getRunTracker(runs, rts[runTrackerIndex]->pageIndex);
+        rts[runTrackerIndex]->page->GetFirst(rec);
+        return true;
+    }
+    return false;
+}
+
+// getNextRecord loads the next record for the selected run.
+// if no more records are available in the current run, it fetches
+// a record from another run.
+// it returns the runIndex for the record and returns -1 if no more
+// records are available for processing in any run.
+off_t getNextRecord(Record *rec, vector<runTracker *> rts, File *runs,
+                    vector<off_t> &runHeads, vector<bool> &runStatus,
+                    size_t runTrackerIndex) {
+    bool status = getNextRecordInRun(rec, rts, runs, runHeads, runTrackerIndex);
+
+    if (status) {
+        return runTrackerIndex;
+    } else {
+        runStatus[runTrackerIndex] = true;
+    }
+
+    for (size_t i = 0; i != runStatus.size(); i++) {
+        if (runStatus[i] == true) continue;
+        status = getNextRecordInRun(rec, rts, runs, runHeads, runTrackerIndex);
+
+        if (status) return i;
+        runStatus[i] = true;
+    }
+    return -1;
+}
+
+void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder) {
+    // Initialize Priority Queue
+    // Load head pages of runs from each run into vec<Page> "vp".
+    // Insert first record from each into PQ coupled with vp index.
+    // Every pull from PQ will result in a new record being inserted from
+    // the corressponding vp index. When the page is empty, fetch a new page
+    // from that run.
+
+    vector<bool> runStatus;
+    auto runTrackers = createRunTrackers(runs, runHeads, runStatus);
+
+    auto recordPQ = initPriorityQueue(runTrackers, sortOrder);
+    bool runsEmpty = false;
+
+    while (!recordPQ.empty()) {
+        auto rec = recordPQ.top();
+        recordPQ.pop();
+
+        if (!runsEmpty) {
+            Record r;
+            auto runTrackerIndex =
+                getNextRecord(&r, runTrackers, &runs, runHeads, runStatus,
+                              rec->runTrackerIndex);
+            if (runTrackerIndex == -1) {
+                runsEmpty = true;
+            }
+            recordPQ.push(new recordTracker(runTrackerIndex, &r));
+        }
+        out->Insert(rec->record);
+    }
+}
 
 void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     int pagesLeft = runlen;
     vector<Record *> singleRun;
     off_t currRunHead = 0;
 
-    //Initialize runs file
-    //TODO: Pull from config file
-    //char* runsFile = config->get_as<string>("dbfiles")+"tpmms_runs.bin";
+    // Initialize runs file
+    // TODO: Pull from config file
+    // char* runsFile = config->get_as<string>("dbfiles")+"tpmms_runs.bin";
     runs.Open(0, "build/dbfiles/tpmms_runs.bin");
-    
+
     Record rec;
     Page buffer;
     int appendResult = 0;
     Record *temp = new Record();
     Schema mySchema("data/catalog", "lineitem");
-    while(in->Remove(&rec)) {
-        if(pagesLeft <= 0) {
-            //sort the current records in singleRun
+    while (in->Remove(&rec)) {
+        if (pagesLeft <= 0) {
+            // sort the current records in singleRun
             sort(singleRun.begin(), singleRun.end(), SortHelper(sortOrder));
 
-            //write it out to file
+            // write it out to file
             runHeads.push_back(currRunHead);
             Page writeBuffer;
             Record *writeTemp;
-            for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
+            for (vector<Record *>::iterator it = singleRun.begin();
+                 it != singleRun.end(); ++it) {
                 writeTemp = *it;
-                //writeTemp->Print(&mySchema);
+                // writeTemp->Print(&mySchema);
                 appendResult = writeBuffer.Append(writeTemp);
                 if (appendResult == 0) {  // indicates that the page is full
-                    runs.AddPage(&writeBuffer,currRunHead++);  // write loaded buffer to file
+                    runs.AddPage(&writeBuffer,
+                                 currRunHead++);  // write loaded buffer to file
                     writeBuffer.EmptyItOut();
                     writeBuffer.Append(writeTemp);
                 }
             }
-            runs.AddPage(&writeBuffer,currRunHead++);  // write remaining records to file
+            runs.AddPage(&writeBuffer,
+                         currRunHead++);  // write remaining records to file
             singleRun.clear();
             pagesLeft = runlen;
         }
         appendResult = buffer.Append(&rec);
         if (appendResult == 0) {  // indicates that the page is full
             // move loaded buffer to vector
-            while(buffer.GetFirst(temp)!=0) {
+            while (buffer.GetFirst(temp) != 0) {
                 singleRun.push_back(temp);
                 temp = new Record();
             }
@@ -67,29 +222,31 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
             buffer.Append(&rec);
         }
     }
-    
-    while(buffer.GetFirst(temp)!=0) {
+
+    while (buffer.GetFirst(temp) != 0) {
         singleRun.push_back(temp);
         temp = new Record();
     }
     free(temp);
 
-    //sort the current records in singleRun
+    // sort the current records in singleRun
     sort(singleRun.begin(), singleRun.end(), SortHelper(sortOrder));
 
-    //write it out to file
+    // write it out to file
     runHeads.push_back(currRunHead);
-    for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
+    for (vector<Record *>::iterator it = singleRun.begin();
+         it != singleRun.end(); ++it) {
         temp = *it;
-        //temp->Print(&mySchema);
+        // temp->Print(&mySchema);
         appendResult = buffer.Append(temp);
         if (appendResult == 0) {  // indicates that the page is full
-            runs.AddPage(&buffer,currRunHead++);  // write loaded buffer to file
+            runs.AddPage(&buffer,
+                         currRunHead++);  // write loaded buffer to file
             buffer.EmptyItOut();
             buffer.Append(temp);
         }
     }
-    runs.AddPage(&buffer,currRunHead);  // write remaining records to file
+    runs.AddPage(&buffer, currRunHead);  // write remaining records to file
     runs.Close();
 }
 
