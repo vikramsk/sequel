@@ -39,16 +39,18 @@ struct MergeSortHelper {
 };
 
 // creates a vector of pages consisting of the first page of each run.
-vector<runTracker *> createRunTrackers(File runs, vector<off_t> runHeads,
+vector<runTracker *> createRunTrackers(File &runs, vector<off_t> runHeads,
                                        vector<bool> &runStatus) {
     vector<runTracker *> runTrackers;
+    Page* runPage = new Page();
     for (vector<off_t>::iterator it = runHeads.begin(); it != runHeads.end();
          ++it) {
-        Page runPage;
-        runs.GetPage(&runPage, *it);
-        runTrackers.push_back(new runTracker(*it, &runPage));
+        runs.GetPage(runPage, *it);
+        runTrackers.push_back(new runTracker(*it, runPage));
         runStatus.push_back(false);
+        runPage = new Page();
     }
+    free(runPage);
     return runTrackers;
 }
 
@@ -146,6 +148,8 @@ void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder) {
     // the corressponding vp index. When the page is empty, fetch a new page
     // from that run.
 
+    runs.Open(1, "build/dbfiles/tpmms_runs.bin");
+
     vector<bool> runStatus;
     auto runTrackers = createRunTrackers(runs, runHeads, runStatus);
 
@@ -168,6 +172,8 @@ void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder) {
         }
         out->Insert(rec->record);
     }
+
+    runs.Close();
 }
 
 void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
