@@ -195,7 +195,7 @@ TEST(SortedFileTest, CreateWorker) {
     int proc = -1, res = 1, tot = 0;
 
     Record temp;
-    int numrecs = 10000;
+    int numrecs = 100;
     while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
     ++proc < numrecs) {
         inputPipe.Insert(&temp);
@@ -204,6 +204,12 @@ TEST(SortedFileTest, CreateWorker) {
     inputPipe.ShutDown();
     cout << "\n create finished.. " << tot << " recs inserted\n";
     ASSERT_EQ(0,fclose(tblfile));
+
+    while (outputPipe.Remove(&temp)) {
+        tot--;
+    }
+    ASSERT_EQ(0,tot);
+    
     void *status;
     int rc = pthread_join(bigQInstance.worker,&status);
     ASSERT_FALSE(rc);

@@ -64,12 +64,13 @@ initPriorityQueue(vector<runTracker *> runTrackers, OrderMaker *sortOrder) {
 
     // Assume each page has at least one record.
     // This should be true because it's the first page of each run.
+    Record *rec = new Record();
     for (std::size_t i = 0; i != runTrackers.size(); i++) {
-        Record rec;
-        runTrackers[i]->page->GetFirst(&rec);
-        pq.push(new recordTracker(i, &rec));
+        runTrackers[i]->page->GetFirst(rec);
+        pq.push(new recordTracker(i, rec));
+        rec = new Record();
     }
-
+    free(rec);
     return pq;
 }
 
@@ -160,15 +161,15 @@ void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder) {
         auto rec = recordPQ.top();
         recordPQ.pop();
 
+        Record* r = new Record();
         if (!runsEmpty) {
-            Record r;
             auto runTrackerIndex =
-                getNextRecord(&r, runTrackers, &runs, runHeads, runStatus,
+                getNextRecord(r, runTrackers, &runs, runHeads, runStatus,
                               rec->runTrackerIndex);
             if (runTrackerIndex == -1) {
                 runsEmpty = true;
             }
-            recordPQ.push(new recordTracker(runTrackerIndex, &r));
+            recordPQ.push(new recordTracker(runTrackerIndex, r));
         }
         out->Insert(rec->record);
     }
