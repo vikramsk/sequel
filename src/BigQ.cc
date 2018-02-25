@@ -18,6 +18,24 @@ struct SortHelper {
 
 void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder){}
 
+off_t appendRunToFile(vector<Record *> &singleRun, File &runs, off_t pageIndex) {
+    Page buffer;
+    Record *temp;
+    int appendResult = 0;
+    for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
+        temp = *it;
+        //temp->Print(&mySchema);
+        appendResult = buffer.Append(temp);
+        if (appendResult == 0) {  // indicates that the page is full
+            runs.AddPage(&buffer,pageIndex++);  // write loaded buffer to file
+            buffer.EmptyItOut();
+            buffer.Append(temp);
+        }
+    }
+    runs.AddPage(&buffer,pageIndex++);  // write remaining records to file
+    return pageIndex;
+}
+
 void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     int pagesLeft = runlen;
     vector<Record *> singleRun;
@@ -37,22 +55,10 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
         if(pagesLeft <= 0) {
             //sort the current records in singleRun
             sort(singleRun.begin(), singleRun.end(), SortHelper(sortOrder));
-
-            //write it out to file
+            //update vector to track head of new run
             runHeads.push_back(currRunHead);
-            Page writeBuffer;
-            Record *writeTemp;
-            for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
-                writeTemp = *it;
-                //writeTemp->Print(&mySchema);
-                appendResult = writeBuffer.Append(writeTemp);
-                if (appendResult == 0) {  // indicates that the page is full
-                    runs.AddPage(&writeBuffer,currRunHead++);  // write loaded buffer to file
-                    writeBuffer.EmptyItOut();
-                    writeBuffer.Append(writeTemp);
-                }
-            }
-            runs.AddPage(&writeBuffer,currRunHead++);  // write remaining records to file
+            //write it out to file
+            currRunHead = appendRunToFile(singleRun,runs,currRunHead);
             singleRun.clear();
             pagesLeft = runlen;
         }
@@ -76,20 +82,10 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
 
     //sort the current records in singleRun
     sort(singleRun.begin(), singleRun.end(), SortHelper(sortOrder));
-
-    //write it out to file
+    //update vector to track head of new run
     runHeads.push_back(currRunHead);
-    for (vector<Record *>::iterator it = singleRun.begin(); it != singleRun.end(); ++it) {
-        temp = *it;
-        //temp->Print(&mySchema);
-        appendResult = buffer.Append(temp);
-        if (appendResult == 0) {  // indicates that the page is full
-            runs.AddPage(&buffer,currRunHead++);  // write loaded buffer to file
-            buffer.EmptyItOut();
-            buffer.Append(temp);
-        }
-    }
-    runs.AddPage(&buffer,currRunHead);  // write remaining records to file
+    //write it out to file
+    appendRunToFile(singleRun,runs,currRunHead);
     runs.Close();
 }
 
