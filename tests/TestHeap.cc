@@ -1,18 +1,16 @@
 #include <File.h>
 #include <Record.h>
-#include "DBFile.h"
 #include "BigQ.h"
 #include "Comparison.h"
+#include "DBFile.h"
 #include "Pipe.h"
 #include "test.h"
 
-
+#include <pthread.h>
 #include <fstream>
 #include <iostream>
 #include "gtest/gtest.h"
 #include "string.h"
-#include <pthread.h>
-
 
 const char *dummyFile = "build/dbFiles/testFile.bin";
 
@@ -69,9 +67,9 @@ TEST(HeapFileTest, Load) {
 
 TEST(HeapFileTest, AddRecords) {
     DBFile dbfile;
-    const char* fpath = "build/tests/region.bin";
+    const char *fpath = "build/tests/region.bin";
     remove(fpath);
-    
+
     dbfile.Create(fpath, heap, NULL);
     dbfile.Open(fpath);
 
@@ -83,21 +81,22 @@ TEST(HeapFileTest, AddRecords) {
         counter++;
         dbfile.Add(temp);
     }
-    ASSERT_GT(counter,0); //check if at least some records were read
+    ASSERT_GT(counter, 0);  // check if at least some records were read
     dbfile.Close();
-    
+
     File file;
     char *pathStr = strdup(fpath);
     file.Open(1, pathStr);
-    ASSERT_GT(file.GetLength(),1); //check if at least one page was written successfully
+    ASSERT_GT(file.GetLength(),
+              1);  // check if at least one page was written successfully
     file.Close();
 }
 
 TEST(HeapFileTest, AddWithGetNext) {
     DBFile dbfile;
-    const char* fpath = "build/tests/region.bin";
+    const char *fpath = "build/tests/region.bin";
     remove(fpath);
-    
+
     dbfile.Create(fpath, heap, NULL);
     dbfile.Open(fpath);
 
@@ -110,20 +109,20 @@ TEST(HeapFileTest, AddWithGetNext) {
         dbfile.Add(temp);
     }
     dbfile.MoveFirst();
-    while(dbfile.GetNext(temp)==1)  counter--;
-    ASSERT_EQ(counter,0); //check if all records were read into the file
+    while (dbfile.GetNext(temp) == 1) counter--;
+    ASSERT_EQ(counter, 0);  // check if all records were read into the file
     dbfile.Close();
 }
 
 TEST(HeapFileTest, AddRecordsToExisting) {
     DBFile dbfile;
-    const char* fpath = "build/tests/region.bin";
+    const char *fpath = "build/tests/region.bin";
     remove(fpath);
     Schema mySchema("data/catalog", "region");
-    
+
     dbfile.Create(fpath, heap, NULL);
-    dbfile.Load(mySchema,"data/10M/region.tbl");
- 
+    dbfile.Load(mySchema, "data/10M/region.tbl");
+
     Record temp;
     FILE *tableFile = fopen("data/10M/region.tbl", "r");
     int counter = 0;
@@ -132,16 +131,17 @@ TEST(HeapFileTest, AddRecordsToExisting) {
         dbfile.Add(temp);
     }
     dbfile.MoveFirst();
-    while(dbfile.GetNext(temp)==1)  counter--;
-    ASSERT_LT(counter,0); //check that counter is less than 0 as records read > records added
+    while (dbfile.GetNext(temp) == 1) counter--;
+    ASSERT_LT(counter, 0);  // check that counter is less than 0 as records read
+                            // > records added
     dbfile.Close();
 }
 
 TEST(HeapFileTest, LoadRecordsToExisting) {
     DBFile dbfile;
-    const char* fpath = "build/tests/region.bin";
+    const char *fpath = "build/tests/region.bin";
     remove(fpath);
-    
+
     dbfile.Create(fpath, heap, NULL);
     Record temp;
     Schema mySchema("data/catalog", "region");
@@ -154,10 +154,11 @@ TEST(HeapFileTest, LoadRecordsToExisting) {
     dbfile.Close();
 
     dbfile.Open(fpath);
-    dbfile.Load(mySchema,"data/10M/region.tbl");
+    dbfile.Load(mySchema, "data/10M/region.tbl");
     dbfile.MoveFirst();
-    while(dbfile.GetNext(temp)==1) counter--;
-    ASSERT_LT(counter,0); //check that counter is less than 0 as records read > records loaded
+    while (dbfile.GetNext(temp) == 1) counter--;
+    ASSERT_LT(counter, 0);  // check that counter is less than 0 as records read
+                            // > records loaded
     dbfile.Close();
 }
 
@@ -185,7 +186,7 @@ TEST(SortedFileTest, CreateWorker) {
     OrderMaker om;
     rel_ptr->get_sort_order(om);
     int bufferSize = 10;
-    int runLength = 1;
+    int runLength = 2;
     Pipe inputPipe(bufferSize);
     Pipe outputPipe(bufferSize);
     BigQ bigQInstance(inputPipe, outputPipe, om, runLength);
@@ -197,22 +198,67 @@ TEST(SortedFileTest, CreateWorker) {
     Record temp;
     int numrecs = 10000;
     while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
-    ++proc < numrecs) {
+           ++proc < numrecs) {
         inputPipe.Insert(&temp);
     }
     tot += proc;
     inputPipe.ShutDown();
     cout << "\n create finished.. " << tot << " recs inserted\n";
-    ASSERT_EQ(0,fclose(tblfile));
+    ASSERT_EQ(0, fclose(tblfile));
+
+    while (outputPipe.Remove(&temp)) {
+        tot--;
+    }
+    ASSERT_EQ(0, tot);
+
     void *status;
-    int rc = pthread_join(bigQInstance.worker,&status);
+    int rc = pthread_join(bigQInstance.worker, &status);
     ASSERT_FALSE(rc);
     /*
     if (rc) {
           cout<<"ERROR; return code from pthread_join() is " << rc << endl;
           exit(-1);
           }
-       cout << "Main: completed join with worker thread having a status of "<< (long)status << endl;
+       cout << "Main: completed join with worker thread having a status of "<<
+    (long)status << endl;
     */
     cleanup();
 }
+
+// TEST(SortedFileTest, BigQPipeTest) {
+//    relation *rel = new relation(lineitem, new Schema("data/catalog",
+//    lineitem),
+//                                 "build/tests/");
+//
+//    OrderMaker om;
+//    rel->get_sort_order(om);
+//
+//    int bufferSize = 10;
+//    int runLength = 1;
+//
+//    Pipe inputPipe(bufferSize);
+//    Pipe outputPipe(bufferSize);
+//    BigQ bigQInstance(inputPipe, outputPipe, om, runLength);
+//    char tbl_path[100];
+//    sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel->name());
+//    FILE *tblfile = fopen(tbl_path, "r");
+//    for (size_t i = 0; i < 10000; i++) {
+//        Record temp;
+//        auto res = temp.SuckNextRecord(rel->schema(), tblfile);
+//        inputPipe.Insert(&temp);
+//    }
+//    inputPipe.ShutDown();
+//
+//    for (size_t i = 0; i < 10000; i++) {
+//        Record temp;
+//        auto res = outputPipe.Remove(&temp);
+//        temp.Print(rel->schema());
+//
+//        if (res == 0) {
+//            break;
+//        }
+//    }
+//    outputPipe.ShutDown();
+//    void *status;
+//    int rc = pthread_join(bigQInstance.worker, &status);
+//}
