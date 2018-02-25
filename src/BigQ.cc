@@ -39,12 +39,13 @@ struct MergeSortHelper {
 };
 
 // creates a vector of pages consisting of the first page of each run.
-vector<runTracker *> createRunTrackers(File &runs, vector<off_t> runHeads,
+vector<runTracker *> createRunTrackers(File &runs, vector<off_t> &runHeads,
                                        vector<bool> &runStatus) {
     vector<runTracker *> runTrackers;
-    Page* runPage = new Page();
+    Page *runPage = new Page();
     for (vector<off_t>::iterator it = runHeads.begin(); it != runHeads.end();
          ++it) {
+        cout << "runHeadIndex: " << *it << endl;
         runs.GetPage(runPage, *it);
         runTrackers.push_back(new runTracker(*it, runPage));
         runStatus.push_back(false);
@@ -56,7 +57,7 @@ vector<runTracker *> createRunTrackers(File &runs, vector<off_t> runHeads,
 
 std::priority_queue<recordTracker *, std::vector<recordTracker *>,
                     MergeSortHelper>
-initPriorityQueue(vector<runTracker *> runTrackers, OrderMaker *sortOrder) {
+initPriorityQueue(vector<runTracker *> &runTrackers, OrderMaker *sortOrder) {
     MergeSortHelper cmp(sortOrder);
     std::priority_queue<recordTracker *, std::vector<recordTracker *>,
                         MergeSortHelper>
@@ -74,17 +75,18 @@ initPriorityQueue(vector<runTracker *> runTrackers, OrderMaker *sortOrder) {
     return pq;
 }
 
-runTracker *getRunTracker(File *runs, off_t pageIndex) {
+runTracker *createRunTracker(File &runs, off_t pageIndex) {
     Page p;
-    runs->GetPage(&p, pageIndex);
+    runs.GetPage(&p, pageIndex);
     return new runTracker(pageIndex, &p);
 }
+
 // getNextRecord fetches the next record using the parameters
 // and stores it in rec.
 // it returns the runTracker index of the returned record.
 // if no record is stored, it returns -1.
-bool getNextRecordInRun(Record *rec, vector<runTracker *> rts, File *runs,
-                        vector<off_t> runHeads, size_t runTrackerIndex) {
+bool getNextRecordInRun(Record *rec, vector<runTracker *> &rts, File &runs,
+                        vector<off_t> &runHeads, size_t runTrackerIndex) {
     int status = rts[runTrackerIndex]->page->GetFirst(rec);
     if (status) {
         return true;
@@ -92,10 +94,9 @@ bool getNextRecordInRun(Record *rec, vector<runTracker *> rts, File *runs,
 
     // if the current page is from the last run.
     if (runTrackerIndex == runHeads.size() - 1) {
-        // The +1 is because there is an extra page stored in the file.
-        if (++rts[runTrackerIndex]->pageIndex + 1 != runs->GetLength()) {
+        if (++rts[runTrackerIndex]->pageIndex < runs.GetLength() - 2) {
             rts[runTrackerIndex] =
-                getRunTracker(runs, rts[runTrackerIndex]->pageIndex);
+                createRunTracker(runs, rts[runTrackerIndex]->pageIndex);
             rts[runTrackerIndex]->page->GetFirst(rec);
             return true;
         } else {
@@ -106,9 +107,12 @@ bool getNextRecordInRun(Record *rec, vector<runTracker *> rts, File *runs,
 
     // if the selected run isn't the last and pageIndex + 1 for the
     // current run isn't the start index of the next run.
-    if (++rts[runTrackerIndex]->pageIndex != runHeads[runTrackerIndex + 1]) {
+    if (++rts[runTrackerIndex]->pageIndex < runHeads[runTrackerIndex + 1]) {
+        cout << "internal run\n";
+        cout << "rt index, pageIndex: " << runTrackerIndex << ", "
+             << rts[runTrackerIndex]->pageIndex << endl;
         rts[runTrackerIndex] =
-            getRunTracker(runs, rts[runTrackerIndex]->pageIndex);
+            createRunTracker(runs, rts[runTrackerIndex]->pageIndex);
         rts[runTrackerIndex]->page->GetFirst(rec);
         return true;
     }
@@ -120,20 +124,22 @@ bool getNextRecordInRun(Record *rec, vector<runTracker *> rts, File *runs,
 // a record from another run.
 // it returns the runIndex for the record and returns -1 if no more
 // records are available for processing in any run.
-off_t getNextRecord(Record *rec, vector<runTracker *> rts, File *runs,
+off_t getNextRecord(Record *rec, vector<runTracker *> &rts, File &runs,
                     vector<off_t> &runHeads, vector<bool> &runStatus,
                     size_t runTrackerIndex) {
-    bool status = getNextRecordInRun(rec, rts, runs, runHeads, runTrackerIndex);
-
-    if (status) {
-        return runTrackerIndex;
-    } else {
-        runStatus[runTrackerIndex] = true;
+    bool status;
+    if (!runStatus[runTrackerIndex]) {
+        status = getNextRecordInRun(rec, rts, runs, runHeads, runTrackerIndex);
+        if (status) {
+            return runTrackerIndex;
+        } else {
+            runStatus[runTrackerIndex] = true;
+        }
     }
 
     for (size_t i = 0; i != runStatus.size(); i++) {
-        if (runStatus[i] == true) continue;
-        status = getNextRecordInRun(rec, rts, runs, runHeads, runTrackerIndex);
+        if (runStatus[i]) continue;
+        status = getNextRecordInRun(rec, rts, runs, runHeads, i);
 
         if (status) return i;
         runStatus[i] = true;
@@ -142,13 +148,6 @@ off_t getNextRecord(Record *rec, vector<runTracker *> rts, File *runs,
 }
 
 void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder) {
-    // Initialize Priority Queue
-    // Load head pages of runs from each run into vec<Page> "vp".
-    // Insert first record from each into PQ coupled with vp index.
-    // Every pull from PQ will result in a new record being inserted from
-    // the corressponding vp index. When the page is empty, fetch a new page
-    // from that run.
-
     runs.Open(1, "build/dbfiles/tpmms_runs.bin");
 
     vector<bool> runStatus;
@@ -161,15 +160,17 @@ void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder) {
         auto rec = recordPQ.top();
         recordPQ.pop();
 
-        Record* r = new Record();
+        Record *r = new Record();
+        recordTracker *rt = new recordTracker(0, r);
         if (!runsEmpty) {
             auto runTrackerIndex =
-                getNextRecord(r, runTrackers, &runs, runHeads, runStatus,
+                getNextRecord(r, runTrackers, runs, runHeads, runStatus,
                               rec->runTrackerIndex);
             if (runTrackerIndex == -1) {
                 runsEmpty = true;
+            } else {
+                recordPQ.push(new recordTracker(runTrackerIndex, r));
             }
-            recordPQ.push(new recordTracker(runTrackerIndex, r));
         }
         out->Insert(rec->record);
     }
