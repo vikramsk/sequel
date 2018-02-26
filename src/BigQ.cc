@@ -45,7 +45,6 @@ vector<runTracker *> createRunTrackers(File &runs, vector<off_t> &runHeads,
     Page *runPage = new Page();
     for (vector<off_t>::iterator it = runHeads.begin(); it != runHeads.end();
          ++it) {
-        cout << "runHeadIndex: " << *it << endl;
         runs.GetPage(runPage, *it);
         runTrackers.push_back(new runTracker(*it, runPage));
         runStatus.push_back(false);
@@ -62,7 +61,6 @@ initPriorityQueue(vector<runTracker *> &runTrackers, OrderMaker *sortOrder) {
     std::priority_queue<recordTracker *, std::vector<recordTracker *>,
                         MergeSortHelper>
         pq(cmp);
-
     // Assume each page has at least one record.
     // This should be true because it's the first page of each run.
     Record *rec = new Record();
@@ -76,9 +74,9 @@ initPriorityQueue(vector<runTracker *> &runTrackers, OrderMaker *sortOrder) {
 }
 
 runTracker *createRunTracker(File &runs, off_t pageIndex) {
-    Page p;
-    runs.GetPage(&p, pageIndex);
-    return new runTracker(pageIndex, &p);
+    Page *p = new Page();
+    runs.GetPage(p, pageIndex);
+    return new runTracker(pageIndex, p);
 }
 
 // getNextRecord fetches the next record using the parameters
@@ -94,7 +92,7 @@ bool getNextRecordInRun(Record *rec, vector<runTracker *> &rts, File &runs,
 
     // if the current page is from the last run.
     if (runTrackerIndex == runHeads.size() - 1) {
-        if (++rts[runTrackerIndex]->pageIndex < runs.GetLength() - 2) {
+        if (++rts[runTrackerIndex]->pageIndex < runs.GetLength() - 1) {
             rts[runTrackerIndex] =
                 createRunTracker(runs, rts[runTrackerIndex]->pageIndex);
             rts[runTrackerIndex]->page->GetFirst(rec);
@@ -108,9 +106,6 @@ bool getNextRecordInRun(Record *rec, vector<runTracker *> &rts, File &runs,
     // if the selected run isn't the last and pageIndex + 1 for the
     // current run isn't the start index of the next run.
     if (++rts[runTrackerIndex]->pageIndex < runHeads[runTrackerIndex + 1]) {
-        cout << "internal run\n";
-        cout << "rt index, pageIndex: " << runTrackerIndex << ", "
-             << rts[runTrackerIndex]->pageIndex << endl;
         rts[runTrackerIndex] =
             createRunTracker(runs, rts[runTrackerIndex]->pageIndex);
         rts[runTrackerIndex]->page->GetFirst(rec);
@@ -155,7 +150,6 @@ void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder) {
 
     auto recordPQ = initPriorityQueue(runTrackers, sortOrder);
     bool runsEmpty = false;
-
     while (!recordPQ.empty()) {
         auto rec = recordPQ.top();
         recordPQ.pop();
@@ -174,8 +168,8 @@ void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder) {
         }
         out->Insert(rec->record);
     }
-
     runs.Close();
+    out->ShutDown();
 }
 
 off_t appendRunToFile(vector<Record *> &singleRun, File &runs,
@@ -277,4 +271,4 @@ BigQ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen) {
     pthread_attr_destroy(&attr);
 }
 
-BigQ::~BigQ() {}
+BigQ::~BigQ() { remove("build/dbfiles/tpmms_runs.bin"); }
