@@ -1,4 +1,5 @@
 #include "DBFile.h"
+#include <iostream>
 #include "Comparison.h"
 #include "ComparisonEngine.h"
 #include "Defs.h"
@@ -8,19 +9,28 @@
 #include "TwoWayList.h"
 #include "stdlib.h"
 #include "string.h"
-#include <iostream>
 
-DBFile::DBFile() { pageIndex = 0; }
+DBFile::DBFile() {
+    pageIndex = 0;
+    dbInstance = NULL;
+}
+
 DBFile::~DBFile() {
     if (mode == WRITE) flushBuffer();
 }
 
 int DBFile::Create(const char *f_path, fType f_type, void *startup) {
-    if (mode == WRITE) flushBuffer();
-    char *pathStr = strdup(f_path);
-    dataFile.Open(0, pathStr);
-    free(pathStr);
-    return 1;
+    if (dbInstance) {
+        return dbInstance->Create(f_path, f_type, startup);
+    }
+
+    if (f_type == heap) {
+        dbInstance = new HeapDBFile();
+    } else if (f_type == sorted) {
+        // dbInstance = new SortedDBFile();
+    }
+
+    return dbInstance->Create(f_path, f_type, startup);
 }
 
 void DBFile::bufferAppend(Record *rec) {
@@ -33,28 +43,12 @@ void DBFile::bufferAppend(Record *rec) {
     }
 }
 
+GenericDBFile *DBFile::getInstance(const char *f_path) {
+    return new HeapDBFile();
+}
+
 void DBFile::Load(Schema &f_schema, const char *loadpath) {
-    if (mode == READ) buffer.EmptyItOut();
-
-    if (dataFile.GetLength()==-1) {
-        cout << "BAD : create/open the file to which you want to add a record\n";
-        exit(1);
-    }
-
-    if(dataFile.GetLength() == 0) pageIndex = 0;
-    else {
-        pageIndex = dataFile.GetLength()-2;
-        dataFile.GetPage(&buffer, pageIndex);
-    }
-
-    mode = WRITE;
-    Record temp;
-    // open up the text file and start processing it
-    FILE *tableFile = fopen(loadpath, "r");
-    // read in all of the records from the text file
-    while (temp.SuckNextRecord(&f_schema, tableFile) == 1) {
-        bufferAppend(&temp);
-    }
+    dbInstance->Load(f_schema, loadpath);
 }
 
 void DBFile::flushBuffer() {
@@ -66,71 +60,24 @@ void DBFile::flushBuffer() {
 }
 
 int DBFile::Open(const char *f_path) {
-    if (mode == WRITE) flushBuffer();
-    char *pathStr = strdup(f_path);
-    dataFile.Open(1, pathStr);
-    free(pathStr);
-    return 1;
-}
-
-void DBFile::MoveFirst() {
-    if (mode == WRITE) flushBuffer();
-    pageIndex = 0;
-    dataFile.GetPage(&buffer, pageIndex);
-}
-
-int DBFile::Close() {
-    if (mode == WRITE) flushBuffer();
-    dataFile.Close();
-    return 1;
-}
-
-void DBFile::Add(Record &rec) {
-    if (mode == WRITE) {
-        bufferAppend(&rec);
-        return;
+    if (dbInstance == NULL) {
+        dbInstance = getInstance(f_path);
     }
-    // mode = READ
-    if (dataFile.GetLength()==-1) {
-        cout << "BAD : create/open the file to which you want to add a record\n";
-        exit(1);
-    }
-
-    if(dataFile.GetLength() == 0) pageIndex = 0;
-    else {
-        pageIndex = dataFile.GetLength()-2;
-        dataFile.GetPage(&buffer, pageIndex);
-    }
-    mode = WRITE;
-    bufferAppend(&rec);
+    return dbInstance->Open(f_path);
 }
+
+void DBFile::MoveFirst() { return dbInstance->MoveFirst(); }
+
+int DBFile::Close() { return dbInstance->Close(); }
+
+void DBFile::Add(Record &rec) { dbInstance->Add(rec); }
 
 int DBFile::GetNext(Record &fetchme) {
-    if (mode == WRITE) return 0;
-
-    int status = buffer.GetFirst(&fetchme);
-    if (!status) {
-        if (dataFile.GetLength() <= pageIndex + 2) return 0;
-        dataFile.GetPage(&buffer, ++pageIndex);
-        status = buffer.GetFirst(&fetchme);
-    }
-    return status;
+    if (!dbInstance) return 0;
+    return dbInstance->GetNext(fetchme);
 }
 
 int DBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
-    int status = 0;
-    ComparisonEngine comp;
-
-    while (!status) {
-        // No more records to fetch.
-        status = GetNext(fetchme);
-        if (!status) break;
-
-        if (comp.Compare(&fetchme, &literal, &cnf)) {
-            status = 1;
-            break;
-        }
-        status = 0;
-    }
-    return status;
+    if (!dbInstance) return 0;
+    return dbInstance->GetNext(fetchme, cnf, literal);
 }
