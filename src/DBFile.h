@@ -1,6 +1,7 @@
 #ifndef DBFILE_H
 #define DBFILE_H
 
+#include "BigQ.h"
 #include "Comparison.h"
 #include "ComparisonEngine.h"
 #include "File.h"
@@ -11,21 +12,14 @@
 typedef enum { heap, sorted, tree } fType;
 
 typedef enum { READ, WRITE } modeType;
-// stub DBFile header..replace it with your own DBFile.h
 
 class GenericDBFile {
    private:
     fType fileType;
 
-    //    off_t pageIndex;
-    //    modeType mode;
-
    public:
     modeType mode;
     File dataFile;
-
-    // GenericDBFile();
-    //~GenericDBFile();
 
     virtual int Create(const char *fpath, fType file_type, void *startup) = 0;
     virtual int Open(const char *fpath) = 0;
@@ -64,9 +58,23 @@ class HeapDBFile : public virtual GenericDBFile {
 };
 
 class SortedDBFile : public virtual GenericDBFile {
+   private:
+    BigQ bigQ;
+
    public:
     SortedDBFile();
     ~SortedDBFile();
+
+    int Create(const char *fpath, fType file_type, void *startup);
+    int Open(const char *fpath);
+    int Close();
+
+    void Load(Schema &myschema, const char *loadpath);
+
+    void MoveFirst();
+    void Add(Record &addme);
+    int GetNext(Record &fetchme);
+    int GetNext(Record &fetchme, CNF &cnf, Record &literal);
 };
 
 class DBFile {
