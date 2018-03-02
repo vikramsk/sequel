@@ -122,6 +122,8 @@ int HeapDBFile::GetNext(Record &fetchme) {
 }
 
 int HeapDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
+    if (mode == WRITE) return 0;
+    
     int status = 0;
     ComparisonEngine comp;
 
