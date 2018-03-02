@@ -10,11 +10,16 @@
 #include "stdlib.h"
 #include "string.h"
 
-SortedDBFile::SortedDBFile() { 
-    pageIndex = 0; 
+SortedDBFile::SortedDBFile() {
+    pageIndex = 0;
     queryOrder = NULL;
+    inPipe = new Pipe(100);
+    outPipe = new Pipe(100);
+    //*originalOrder = startup;
+    bigQ = new BigQ(*inPipe, *outPipe, *originalOrder, 2);
 }
-SortedDBFile::~SortedDBFile() { 
+
+SortedDBFile::~SortedDBFile() {
     if (mode == WRITE) flushBuffer();
 }
 
@@ -37,11 +42,27 @@ int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
 void SortedDBFile::Load(Schema &f_schema, const char *loadpath) {}
 
 void SortedDBFile::flushBuffer() {
-    // dataFile.AddPage(&buffer,
-    //                  pageIndex);  // write remaining records in buffer to file
-    // buffer.EmptyItOut();
+    inPipe->ShutDown();
+    mergeRecords();
     mode = READ;
     pageIndex = 0;
+}
+
+void SortedDBFile::bufferAppend(Record *rec) {
+    int appendResult = buffer.Append(rec);
+    if (appendResult == 0) {  // indicates that the page is full
+        dataFile.AddPage(&buffer,
+                         pageIndex++);  // write loaded buffer to file
+        buffer.EmptyItOut();
+        buffer.Append(rec);
+    }
+}
+
+void SortedDBFile::mergeRecords() {
+    Record rec;
+    while (outPipe->Remove(&rec)) {
+        bufferAppend(&rec);
+    }
 }
 
 int SortedDBFile::Open(const char *f_path) {
@@ -64,9 +85,13 @@ int SortedDBFile::Close() {
     return 1;
 }
 
-void SortedDBFile::Add(Record &rec) {}
+void SortedDBFile::Add(Record &rec) {
+    if (mode == WRITE) {
+        inPipe->Insert(&rec);
+    }
+}
 
-int SortedDBFile::GetNext(Record &fetchme) { 
+int SortedDBFile::GetNext(Record &fetchme) {
     if (mode == WRITE) {
         flushBuffer();
         MoveFirst();
@@ -91,7 +116,7 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
 
     if (!queryOrder) {
         queryOrder = new OrderMaker();
-        status = cnf.GetQueryOrder(*originalOrder,*queryOrder);
+        status = cnf.GetQueryOrder(*originalOrder, *queryOrder);
         if (!status) return GetEqualToLiteral(fetchme, cnf, literal);
     }
 
@@ -100,10 +125,10 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
     // TODO: Check if you need to free queryOrder
 
     return status;
-
 }
 
-int SortedDBFile::GetEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal) {
+int SortedDBFile::GetEqualToLiteral(Record &fetchme, CNF &cnf,
+                                    Record &literal) {
     int status = 0;
     ComparisonEngine comp;
 

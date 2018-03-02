@@ -219,7 +219,8 @@ TEST(HeapFileTest, GetNextFromEmptyFile) {
 //           cout<<"ERROR; return code from pthread_join() is " << rc << endl;
 //           exit(-1);
 //           }
-//        cout << "Main: completed join with worker thread having a status of "<<
+//        cout << "Main: completed join with worker thread having a status of
+//        "<<
 //     (long)status << endl;
 //     */
 //     cleanup();
@@ -275,7 +276,7 @@ TEST(SortedFileTest, GetNextWithSelectionPredicate) {
         int l;
     } startup = {&om, runlen};
 
-    DBFile dbfile;
+    SortedDBFile dbfile;
     cout << "\n output to dbfile : " << rel_ptr->path() << endl;
     dbfile.Create(rel_ptr->path(), sorted, &startup);
 
@@ -307,7 +308,8 @@ TEST(SortedFileTest, GetNextWithSelectionPredicate) {
             cerr << ".";
         }
     }
-    cout << "\n query over " << rel_ptr->path() << " returned " << cnt << " recs\n";
+    cout << "\n query over " << rel_ptr->path() << " returned " << cnt
+         << " recs\n";
     dbfile.Close();
     cleanup();
 }
