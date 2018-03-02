@@ -16,7 +16,7 @@ HeapDBFile::~HeapDBFile() {
 }
 
 int HeapDBFile::Create(const char *f_path, fType f_type, void *startup) {
-    if (mode == WRITE) HeapDBFile::flushBuffer();
+    if (mode == WRITE) flushBuffer();
     char *pathStr = strdup(f_path);
     dataFile.Open(0, pathStr);
     free(pathStr);

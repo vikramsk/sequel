@@ -59,7 +59,13 @@ class HeapDBFile : public virtual GenericDBFile {
 
 class SortedDBFile : public virtual GenericDBFile {
    private:
-    // BigQ bigQ;
+    BigQ *bigQ;
+    int runLength;
+    OrderMaker *orderMaker;
+    Page buffer;
+    off_t pageIndex;
+
+    void flushBuffer();
 
    public:
     SortedDBFile();
