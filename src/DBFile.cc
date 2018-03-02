@@ -1,5 +1,6 @@
 #include "DBFile.h"
 #include <iostream>
+#include <string>
 #include "Comparison.h"
 #include "ComparisonEngine.h"
 #include "Defs.h"
@@ -8,16 +9,14 @@
 #include "Schema.h"
 #include "TwoWayList.h"
 #include "stdlib.h"
-#include "string.h"
+
+using namespace std;
 
 DBFile::DBFile() {
     pageIndex = 0;
     dbInstance = NULL;
 }
-
-DBFile::~DBFile() {
-    if (mode == WRITE) flushBuffer();
-}
+DBFile::~DBFile() {}
 
 int DBFile::Create(const char *f_path, fType f_type, void *startup) {
     if (dbInstance) {
@@ -27,36 +26,26 @@ int DBFile::Create(const char *f_path, fType f_type, void *startup) {
     if (f_type == heap) {
         dbInstance = new HeapDBFile();
     } else if (f_type == sorted) {
-        // dbInstance = new SortedDBFile();
+        dbInstance = new SortedDBFile();
     }
 
     return dbInstance->Create(f_path, f_type, startup);
 }
 
-void DBFile::bufferAppend(Record *rec) {
-    int appendResult = buffer.Append(rec);
-    if (appendResult == 0) {  // indicates that the page is full
-        dataFile.AddPage(&buffer,
-                         pageIndex++);  // write loaded buffer to file
-        buffer.EmptyItOut();
-        buffer.Append(rec);
-    }
-}
-
 GenericDBFile *DBFile::getInstance(const char *f_path) {
+    char *p = strdup(f_path);
+    string path(p);
+    // path(f_path);
+
+    size_t start_pos = path.find(".bin");
+    path.replace(start_pos, 4, ".meta");
+
+    cout << path << endl;
     return new HeapDBFile();
 }
 
 void DBFile::Load(Schema &f_schema, const char *loadpath) {
     dbInstance->Load(f_schema, loadpath);
-}
-
-void DBFile::flushBuffer() {
-    dataFile.AddPage(&buffer,
-                     pageIndex);  // write remaining records in buffer to file
-    buffer.EmptyItOut();
-    mode = READ;
-    pageIndex = 0;
 }
 
 int DBFile::Open(const char *f_path) {

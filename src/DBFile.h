@@ -59,7 +59,7 @@ class HeapDBFile : public virtual GenericDBFile {
 
 class SortedDBFile : public virtual GenericDBFile {
    private:
-    BigQ bigQ;
+    // BigQ bigQ;
 
    public:
     SortedDBFile();
