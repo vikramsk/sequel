@@ -60,6 +60,9 @@ class HeapDBFile : public virtual GenericDBFile {
 class SortedDBFile : public virtual GenericDBFile {
    private:
     BigQ *bigQ;
+    Pipe *inPipe;
+    Pipe *outPipe;
+
     int runLength;
     OrderMaker *originalOrder;
     OrderMaker *queryOrder;
@@ -67,6 +70,9 @@ class SortedDBFile : public virtual GenericDBFile {
     off_t pageIndex;
 
     void flushBuffer();
+    void mergeRecords();
+    void bufferAppend(Record *rec);
+    int GetEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal);
 
    public:
     SortedDBFile();

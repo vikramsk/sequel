@@ -118,6 +118,48 @@ void OrderMaker :: Print () {
 }
 
 
+int CNF :: GetQueryOrder(OrderMaker &sortOrder, OrderMaker &queryOrder) {
+	
+	// initialize the size of the query OrderMaker
+	queryOrder.numAtts = 0;
+	
+	for (int k = 0; k < sortOrder.numAtts; k++) {
+		
+		int attr = sortOrder.whichAtts[k];
+		bool foundAttr = false;
+
+		// loop through all of the disjunctions in the CNF and find those
+		// that are acceptable for use in a query
+		for (int i = 0; i < numAnds; i++) {
+		
+			// if we don't have a disjunction of length one, then it
+			// can't be acceptable for use in a query
+			if (orLens[i] != 1) {
+				continue;
+			}
+
+			// made it this far, so first verify that it is an equality check
+			if (orList[i][0].op != Equals) {
+				continue;
+			}
+
+			foundAttr = orList[i][0].whichAtt1 == attr || orList[i][0].whichAtt2 == attr;
+			if (foundAttr) break;
+		}
+
+		if (!foundAttr) break;
+
+		// since we are here, we have found an eligible attribute!!!
+		// so all we need to do is add this attribute info to the
+		// end of our query structure
+		queryOrder.whichAtts[queryOrder.numAtts] = attr;
+		queryOrder.whichTypes[queryOrder.numAtts] = sortOrder.whichTypes[k];
+		queryOrder.numAtts++;
+	}
+
+	return queryOrder.numAtts;
+}
+
 int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 
 	// initialize the size of the OrderMakers

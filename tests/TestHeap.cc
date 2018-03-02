@@ -180,52 +180,53 @@ TEST(HeapFileTest, GetNextFromEmptyFile) {
     ASSERT_EQ(status, 0);
 }
 
-TEST(SortedFileTest, CreateWorker) {
-    setup("data/catalog", "build/tests/", "data/10M/");
-    relation *rel_ptr = li;
-    OrderMaker om;
-    rel_ptr->get_sort_order(om);
-    int bufferSize = 10;
-    int runLength = 2;
-    Pipe inputPipe(bufferSize);
-    Pipe outputPipe(bufferSize);
-    BigQ bigQInstance(inputPipe, outputPipe, om, runLength);
-    char tbl_path[100];  // construct path of the tpch flat text file
-    sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel_ptr->name());
-    FILE *tblfile = fopen(tbl_path, "r");
-    int proc = -1, res = 1, tot = 0;
+// TEST(SortedFileTest, CreateWorker) {
+//     setup("data/catalog", "build/tests/", "data/10M/");
+//     relation *rel_ptr = li;
+//     OrderMaker om;
+//     rel_ptr->get_sort_order(om);
+//     int bufferSize = 10;
+//     int runLength = 2;
+//     Pipe inputPipe(bufferSize);
+//     Pipe outputPipe(bufferSize);
+//     BigQ bigQInstance(inputPipe, outputPipe, om, runLength);
+//     char tbl_path[100];  // construct path of the tpch flat text file
+//     sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel_ptr->name());
+//     FILE *tblfile = fopen(tbl_path, "r");
+//     int proc = -1, res = 1, tot = 0;
 
-    Record temp;
-    int numrecs = 10000;
-    while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
-           ++proc < numrecs) {
-        inputPipe.Insert(&temp);
-    }
-    tot += proc;
-    inputPipe.ShutDown();
-    cout << "\n create finished.. " << tot << " recs inserted\n";
-    ASSERT_EQ(0, fclose(tblfile));
+//     Record temp;
+//     int numrecs = 10000;
+//     while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
+//            ++proc < numrecs) {
+//         inputPipe.Insert(&temp);
+//     }
+//     tot += proc;
+//     inputPipe.ShutDown();
+//     cout << "\n create finished.. " << tot << " recs inserted\n";
+//     ASSERT_EQ(0, fclose(tblfile));
 
-    while (outputPipe.Remove(&temp)) {
-        tot--;
-    }
-    ASSERT_EQ(0, tot);
+//     while (outputPipe.Remove(&temp)) {
+//         tot--;
+//     }
+//     ASSERT_EQ(0, tot);
 
-    void *status;
-    int rc = pthread_join(bigQInstance.worker, &status);
-    ASSERT_FALSE(rc);
-    /*
-    if (rc) {
-          cout<<"ERROR; return code from pthread_join() is " << rc << endl;
-          exit(-1);
-          }
-       cout << "Main: completed join with worker thread having a status of "<<
-    (long)status << endl;
-    */
-    cleanup();
-}
+//     void *status;
+//     int rc = pthread_join(bigQInstance.worker, &status);
+//     ASSERT_FALSE(rc);
+//     /*
+//     if (rc) {
+//           cout<<"ERROR; return code from pthread_join() is " << rc << endl;
+//           exit(-1);
+//           }
+//        cout << "Main: completed join with worker thread having a status of
+//        "<<
+//     (long)status << endl;
+//     */
+//     cleanup();
+// }
 
-// TEST(SortedFileTest, BigQPipeTest) {
+// TEST(SortedFileTest, BigQPipe) {
 //    relation *rel = new relation(lineitem, new Schema("data/catalog",
 //    lineitem),
 //                                 "build/tests/");
@@ -262,3 +263,53 @@ TEST(SortedFileTest, CreateWorker) {
 //    void *status;
 //    int rc = pthread_join(bigQInstance.worker, &status);
 //}
+
+TEST(SortedFileTest, GetNextWithSelectionPredicate) {
+    setup("data/catalog", "build/tests/", "data/10M/");
+    relation *rel_ptr = li;
+    OrderMaker om;
+    rel_ptr->get_sort_order(om);
+
+    int runlen = 2;
+    struct {
+        OrderMaker *o;
+        int l;
+    } startup = {&om, runlen};
+
+    SortedDBFile dbfile;
+    cout << "\n output to dbfile : " << rel_ptr->path() << endl;
+    dbfile.Create(rel_ptr->path(), sorted, &startup);
+
+    char tbl_path[100];  // construct path of the tpch flat text file
+    sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel_ptr->name());
+    FILE *tblfile = fopen(tbl_path, "r");
+    int proc = -1, res = 1, tot = 0;
+
+    Record temp;
+    int numrecs = 10000;
+    while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
+           ++proc < numrecs) {
+        dbfile.Add(temp);
+    }
+    tot += proc;
+    cout << "\n create finished.. " << tot << " recs inserted\n";
+    ASSERT_EQ(0, fclose(tblfile));
+
+    CNF cnf;
+    Record literal;
+    rel_ptr->get_cnf(cnf, literal);
+    dbfile.MoveFirst();
+
+    int cnt = 0;
+    cerr << "\t";
+    while (dbfile.GetNext(temp, cnf, literal) && ++cnt) {
+        temp.Print(rel_ptr->schema());
+        if (cnt % 10000 == 0) {
+            cerr << ".";
+        }
+    }
+    cout << "\n query over " << rel_ptr->path() << " returned " << cnt
+         << " recs\n";
+    dbfile.Close();
+    cleanup();
+}
