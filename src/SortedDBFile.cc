@@ -97,6 +97,8 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
 
     // Binary search
 
+    // TODO: Check if you need to free queryOrder
+
     return status;
 
 }
