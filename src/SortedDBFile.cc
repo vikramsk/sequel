@@ -26,7 +26,7 @@ int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
         int l;
     };
     SortInfo *sortInfo = (SortInfo *)startup;
-    orderMaker = sortInfo->o;
+    originalOrder = sortInfo->o;
     runLength = sortInfo->l;
     return 1;
 }
