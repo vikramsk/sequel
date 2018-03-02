@@ -64,7 +64,10 @@ int SortedDBFile::Close() {
 void SortedDBFile::Add(Record &rec) {}
 
 int SortedDBFile::GetNext(Record &fetchme) { 
-    if (mode == WRITE) return 0;
+    if (mode == WRITE) {
+        flushBuffer();
+        MoveFirst();
+    }
 
     int status = buffer.GetFirst(&fetchme);
     if (!status) {
@@ -76,5 +79,24 @@ int SortedDBFile::GetNext(Record &fetchme) {
 }
 
 int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
-    return 0;
+    if (mode == WRITE) {
+        flushBuffer();
+        MoveFirst();
+    }
+
+    int status = 0;
+    // ComparisonEngine comp;
+
+    // while (!status) {
+    //     // No more records to fetch.
+    //     status = GetNext(fetchme);
+    //     if (!status) break;
+
+    //     if (comp.Compare(&fetchme, &literal, &cnf)) {
+    //         status = 1;
+    //         break;
+    //     }
+    //     status = 0;
+    // }
+    return status;
 }

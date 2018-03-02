@@ -110,7 +110,10 @@ void HeapDBFile::Add(Record &rec) {
 }
 
 int HeapDBFile::GetNext(Record &fetchme) {
-    if (mode == WRITE) return 0;
+    if (mode == WRITE) {
+        flushBuffer();
+        MoveFirst();
+    }
 
     int status = buffer.GetFirst(&fetchme);
     if (!status) {
@@ -122,7 +125,10 @@ int HeapDBFile::GetNext(Record &fetchme) {
 }
 
 int HeapDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
-    if (mode == WRITE) return 0;
+    if (mode == WRITE) {
+        flushBuffer();
+        MoveFirst();
+    }
     
     int status = 0;
     ComparisonEngine comp;

@@ -61,7 +61,8 @@ class SortedDBFile : public virtual GenericDBFile {
    private:
     BigQ *bigQ;
     int runLength;
-    OrderMaker *orderMaker;
+    OrderMaker *originalOrder;
+    OrderMaker *queryOrder;
     Page buffer;
     off_t pageIndex;
 
