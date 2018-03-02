@@ -80,13 +80,7 @@ class SortedDBFile : public virtual GenericDBFile {
 class DBFile {
    private:
     GenericDBFile *dbInstance;
-    File dataFile;
-    Page buffer;
-    off_t pageIndex;
-    modeType mode;
 
-    void flushBuffer();
-    void bufferAppend(Record *rec);
     GenericDBFile *getInstance(const char *f_path);
 
    public:

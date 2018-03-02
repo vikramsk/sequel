@@ -1,6 +1,5 @@
 #include "DBFile.h"
 #include <iostream>
-#include <string>
 #include "Comparison.h"
 #include "ComparisonEngine.h"
 #include "Defs.h"
@@ -8,12 +7,12 @@
 #include "Record.h"
 #include "Schema.h"
 #include "TwoWayList.h"
+#include "string.h"
 #include "stdlib.h"
 
 using namespace std;
 
 DBFile::DBFile() {
-    pageIndex = 0;
     dbInstance = NULL;
 }
 DBFile::~DBFile() {}
