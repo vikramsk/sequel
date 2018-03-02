@@ -16,7 +16,6 @@ SortedDBFile::SortedDBFile() {
     inPipe = new Pipe(100);
     outPipe = new Pipe(100);
     //*originalOrder = startup;
-    bigQ = new BigQ(*inPipe, *outPipe, *originalOrder, 2);
 }
 
 SortedDBFile::~SortedDBFile() {
@@ -36,6 +35,8 @@ int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
     SortInfo *sortInfo = (SortInfo *)startup;
     originalOrder = sortInfo->o;
     runLength = sortInfo->l;
+    //TODO: Determine when to free / reinitialize BigQ
+    bigQ = new BigQ(*inPipe, *outPipe, *originalOrder, 2);
     return 1;
 }
 
@@ -86,6 +87,11 @@ int SortedDBFile::Close() {
 }
 
 void SortedDBFile::Add(Record &rec) {
+    //TODO: Handle other things before setting mode to write
+    if (mode == READ) {
+        mode = WRITE;
+    }
+
     if (mode == WRITE) {
         inPipe->Insert(&rec);
     }
