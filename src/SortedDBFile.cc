@@ -10,7 +10,10 @@
 #include "stdlib.h"
 #include "string.h"
 
-SortedDBFile::SortedDBFile() { pageIndex = 0; }
+SortedDBFile::SortedDBFile() { 
+    pageIndex = 0; 
+    queryOrder = NULL;
+}
 SortedDBFile::~SortedDBFile() { 
     if (mode == WRITE) flushBuffer();
 }
@@ -85,18 +88,33 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
     }
 
     int status = 0;
-    // ComparisonEngine comp;
 
-    // while (!status) {
-    //     // No more records to fetch.
-    //     status = GetNext(fetchme);
-    //     if (!status) break;
+    if (!queryOrder) {
+        queryOrder = new OrderMaker();
+        status = cnf.GetQueryOrder(*originalOrder,*queryOrder);
+        if (!status) return GetEqualToLiteral(fetchme, cnf, literal);
+    }
 
-    //     if (comp.Compare(&fetchme, &literal, &cnf)) {
-    //         status = 1;
-    //         break;
-    //     }
-    //     status = 0;
-    // }
+    // Binary search
+
+    return status;
+
+}
+
+int SortedDBFile::GetEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal) {
+    int status = 0;
+    ComparisonEngine comp;
+
+    while (!status) {
+        // No more records to fetch.
+        status = GetNext(fetchme);
+        if (!status) break;
+
+        if (comp.Compare(&fetchme, &literal, &cnf)) {
+            status = 1;
+            break;
+        }
+        status = 0;
+    }
     return status;
 }

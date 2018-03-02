@@ -67,6 +67,7 @@ class SortedDBFile : public virtual GenericDBFile {
     off_t pageIndex;
 
     void flushBuffer();
+    int GetEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal);
 
    public:
     SortedDBFile();
