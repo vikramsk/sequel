@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <fstream>
 #include <iostream>
+#include <climits>
 #include "gtest/gtest.h"
 #include "string.h"
 
