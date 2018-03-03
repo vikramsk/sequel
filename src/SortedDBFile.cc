@@ -64,7 +64,6 @@ void SortedDBFile::readMetaFile(const char *f_path) {
 }
 
 int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
-    if (mode == WRITE) flushBuffer();
     char *pathStr = strdup(f_path);
     dataFile.Open(0, pathStr);
     free(pathStr);
