@@ -148,7 +148,10 @@ int CNF :: GetQueryOrder(OrderMaker &sortOrder, OrderMaker &queryOrder) {
 				continue;
 			}
 
-			foundAttr = orList[i][0].whichAtt1 == attr || orList[i][0].whichAtt2 == attr;
+			//Compare the right operand to find if the same attribute is in use
+			if (orList[i][0].operand1 == Literal) foundAttr = orList[i][0].whichAtt2 == attr;
+			else foundAttr = orList[i][0].whichAtt1 == attr;
+			
 			if (foundAttr) break;
 		}
 
@@ -164,6 +167,7 @@ int CNF :: GetQueryOrder(OrderMaker &sortOrder, OrderMaker &queryOrder) {
 
 	return queryOrder.numAtts;
 }
+
 
 int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 
