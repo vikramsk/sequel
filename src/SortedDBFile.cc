@@ -45,8 +45,14 @@ void SortedDBFile::Load(Schema &f_schema, const char *loadpath) {}
 void SortedDBFile::flushBuffer() {
     inPipe->ShutDown();
     mergeRecords();
+    dataFile.AddPage(&buffer,pageIndex);  // write remaining records to file
+    buffer.EmptyItOut();
     mode = READ;
     pageIndex = 0;
+    if (queryOrder) {
+        free(queryOrder);
+        queryOrder = NULL;
+    }
 }
 
 void SortedDBFile::bufferAppend(Record *rec) {
@@ -76,6 +82,12 @@ int SortedDBFile::Open(const char *f_path) {
 
 void SortedDBFile::MoveFirst() {
     if (mode == WRITE) flushBuffer();
+    
+    // mode = READ
+    if (queryOrder) {
+        free(queryOrder);
+        queryOrder = NULL;
+    }
     pageIndex = 0;
     dataFile.GetPage(&buffer, pageIndex);
 }
@@ -115,22 +127,66 @@ int SortedDBFile::GetNext(Record &fetchme) {
 int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
     if (mode == WRITE) {
         flushBuffer();
-        MoveFirst();
+        MoveFirst(); //load first page into the buffer
     }
 
     int status = 0;
+    ComparisonEngine comp;
 
     if (!queryOrder) {
         queryOrder = new OrderMaker();
-        status = cnf.GetQueryOrder(*originalOrder, *queryOrder);
-        if (!status) return GetEqualToLiteral(fetchme, cnf, literal);
+        if (!cnf.GetQueryOrder(*originalOrder, *queryOrder)) {
+            return GetEqualToLiteral(fetchme, cnf, literal);
+        } else {
+            // Binary search to get the right page into the buffer
+            off_t candidatePageIndex = BinarySearch(pageIndex,dataFile.GetLength()-2,comp,literal);
+            if (candidatePageIndex == -1) { 
+                return 0;
+            } else if (candidatePageIndex != pageIndex) {
+                pageIndex = candidatePageIndex;
+                buffer.EmptyItOut();
+                dataFile.GetPage(&buffer, pageIndex);
+                status = buffer.GetFirst(&fetchme);
+            } else if (candidatePageIndex == 0) { //and pageIndex is also 0
+                status = buffer.GetFirst(&fetchme);  
+                if (!status) {
+                    dataFile.GetPage(&buffer, pageIndex);
+                    status = buffer.GetFirst(&fetchme);
+                }
+            }
+        }
+    } else { //Else there are candidate records in the buffer
+        status = buffer.GetFirst(&fetchme);
+        if (!status) {
+            if (dataFile.GetLength() <= pageIndex + 2) return 0;
+            dataFile.GetPage(&buffer, ++pageIndex);
+            status = buffer.GetFirst(&fetchme);
+        }
+    }
+    
+    //Find first record in the buffer that satisfies queryOrder
+    while (status && comp.Compare(&fetchme,&literal,queryOrder) == -1) {
+        status = buffer.GetFirst(&fetchme);
+    }
+    if(!status) return 0;
+    
+    while (comp.Compare(&fetchme,&literal,queryOrder) == 0) {
+        if (comp.Compare(&fetchme, &literal, &cnf)) {
+            return 1;
+        }
+        status = buffer.GetFirst(&fetchme);
+        if (!status) {
+            if (dataFile.GetLength() <= pageIndex + 2) return 0;
+            dataFile.GetPage(&buffer, ++pageIndex);
+            status = buffer.GetFirst(&fetchme);
+        }
     }
 
-    // Binary search
+    return 0;
+}
 
-    // TODO: Check if you need to free queryOrder
-
-    return status;
+off_t SortedDBFile::BinarySearch(off_t start, off_t end, ComparisonEngine &comp, Record &literal) {
+    return 0;
 }
 
 int SortedDBFile::GetEqualToLiteral(Record &fetchme, CNF &cnf,

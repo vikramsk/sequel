@@ -73,6 +73,7 @@ class SortedDBFile : public virtual GenericDBFile {
     void mergeRecords();
     void bufferAppend(Record *rec);
     int GetEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal);
+    off_t BinarySearch(off_t start, off_t end, ComparisonEngine &comp, Record &literal);
 
    public:
     SortedDBFile();

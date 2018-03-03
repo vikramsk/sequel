@@ -138,7 +138,12 @@ int CNF :: GetQueryOrder(OrderMaker &sortOrder, OrderMaker &queryOrder) {
 				continue;
 			}
 
-			// made it this far, so first verify that it is an equality check
+			// verify that it is comparing the attribute with a literal value
+			if (orList[i][0].operand1 != Literal && orList[i][0].operand2 != Literal) {
+				continue;
+			}
+			
+			// made it this far, now verify that it is an equality check
 			if (orList[i][0].op != Equals) {
 				continue;
 			}
