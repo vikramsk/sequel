@@ -64,6 +64,7 @@ class SortedDBFile : public virtual GenericDBFile {
     Pipe *outPipe;
 
     int runLength;
+    const char *filePath;
     OrderMaker *originalOrder;
     OrderMaker *queryOrder;
     OrderMaker *queryLiteralOrder;
@@ -72,12 +73,13 @@ class SortedDBFile : public virtual GenericDBFile {
 
     void flushBuffer();
     void mergeRecords();
-    void bufferAppend(Record *rec);
+    // void bufferAppend(Record *rec);
     int getEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal);
     off_t binarySearch(off_t start, off_t end, Record &literal);
 
    public:
     SortedDBFile();
+    SortedDBFile(OrderMaker *order);
     ~SortedDBFile();
 
     int Create(const char *fpath, fType file_type, void *startup);
@@ -95,7 +97,6 @@ class SortedDBFile : public virtual GenericDBFile {
 class DBFile {
    private:
     GenericDBFile *dbInstance;
-
     GenericDBFile *getInstance(const char *f_path);
 
    public:
@@ -113,4 +114,5 @@ class DBFile {
     int GetNext(Record &fetchme);
     int GetNext(Record &fetchme, CNF &cnf, Record &literal);
 };
+
 #endif

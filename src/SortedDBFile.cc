@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include "Comparison.h"
 #include "ComparisonEngine.h"
@@ -19,8 +20,39 @@ SortedDBFile::SortedDBFile() {
     //*originalOrder = startup;
 }
 
+SortedDBFile::SortedDBFile(OrderMaker *order) {
+    pageIndex = 0;
+    queryOrder = NULL;
+    inPipe = new Pipe(100);
+    outPipe = new Pipe(100);
+    originalOrder = order;
+}
+
+typedef struct SortInfo {
+    OrderMaker *o;
+    int l;
+};
+
 SortedDBFile::~SortedDBFile() {
     if (mode == WRITE) flushBuffer();
+}
+
+char *metaFilePath(const char *f_path) {
+    char *p = strdup(f_path);
+    string path(p);
+
+    size_t start_pos = path.find(".bin");
+    path.replace(start_pos, 4, ".meta");
+    return strdup(path.c_str());
+}
+
+void writeToMetaFile(const char *f_path, void *startup) {
+    ofstream metaFile(metaFilePath(f_path), std::ios_base::app);
+
+    SortInfo *si = (SortInfo *)startup;
+    metaFile << si->l << endl;
+    OrderMaker *om = (OrderMaker *)si->o;
+    metaFile << *om;
 }
 
 int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
@@ -36,8 +68,9 @@ int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
     SortInfo *sortInfo = (SortInfo *)startup;
     originalOrder = sortInfo->o;
     runLength = sortInfo->l;
-    //TODO: Determine when to free / reinitialize BigQ
+    // TODO: Determine when to free / reinitialize BigQ
     bigQ = new BigQ(*inPipe, *outPipe, *originalOrder, 2);
+    writeToMetaFile(f_path, startup);
     return 1;
 }
 
@@ -46,7 +79,7 @@ void SortedDBFile::Load(Schema &f_schema, const char *loadpath) {}
 void SortedDBFile::flushBuffer() {
     inPipe->ShutDown();
     mergeRecords();
-    dataFile.AddPage(&buffer,pageIndex);  // write remaining records to file
+    dataFile.AddPage(&buffer, pageIndex);  // write remaining records to file
     buffer.EmptyItOut();
     mode = READ;
     pageIndex = 0;
@@ -58,21 +91,48 @@ void SortedDBFile::flushBuffer() {
     }
 }
 
-void SortedDBFile::bufferAppend(Record *rec) {
-    int appendResult = buffer.Append(rec);
+void bufferAppend(Record *rec, File &file, Page &buf, off_t &pageIndex) {
+    int appendResult = buf.Append(rec);
     if (appendResult == 0) {  // indicates that the page is full
-        dataFile.AddPage(&buffer,
-                         pageIndex++);  // write loaded buffer to file
-        buffer.EmptyItOut();
-        buffer.Append(rec);
+        file.AddPage(&buf,
+                     pageIndex++);  // write loaded buffer to file
+        buf.EmptyItOut();
+        buf.Append(rec);
     }
 }
 
 void SortedDBFile::mergeRecords() {
-    Record rec;
-    while (outPipe->Remove(&rec)) {
-        bufferAppend(&rec);
+    Record pipeRecord;
+    Record fileRecord;
+    File newDataFile;
+    Page newFilePage;
+    SortedDBFile tempDBFile;
+
+    char *newFilePath = strdup(filePath);
+    strcat(newFilePath, "1");
+    newDataFile.Open(0, newFilePath);
+    tempDBFile.Open(filePath);
+    tempDBFile.MoveFirst();
+
+    int fileStatus = tempDBFile.GetNext(fileRecord);
+    int pipeStatus = outPipe->Remove(&pipeRecord);
+    off_t newPageIndex = 0;
+    ComparisonEngine comp;
+
+    while (fileStatus || pipeStatus) {
+        int status = comp.Compare(&fileRecord, &pipeRecord, originalOrder);
+        if (status < 0) {
+            bufferAppend(&fileRecord, newDataFile, newFilePage, newPageIndex);
+            fileStatus = tempDBFile.GetNext(fileRecord);
+        } else {
+            bufferAppend(&pipeRecord, newDataFile, newFilePage, newPageIndex);
+            pipeStatus = outPipe->Remove(&pipeRecord);
+        }
     }
+
+    remove(filePath);
+    rename(newFilePath, filePath);
+    this->Open(filePath);
 }
 
 int SortedDBFile::Open(const char *f_path) {
@@ -85,7 +145,7 @@ int SortedDBFile::Open(const char *f_path) {
 
 void SortedDBFile::MoveFirst() {
     if (mode == WRITE) flushBuffer();
-    
+
     // mode = READ
     if (queryOrder) {
         free(queryOrder);
@@ -104,7 +164,7 @@ int SortedDBFile::Close() {
 }
 
 void SortedDBFile::Add(Record &rec) {
-    //TODO: Handle other things before setting mode to write
+    // TODO: Handle other things before setting mode to write
     if (mode == READ) {
         mode = WRITE;
     }
@@ -132,7 +192,7 @@ int SortedDBFile::GetNext(Record &fetchme) {
 int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
     if (mode == WRITE) {
         flushBuffer();
-        MoveFirst(); //load first page into the buffer
+        MoveFirst();  // load first page into the buffer
     }
 
     int status = 0;
@@ -140,28 +200,32 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
     if (!queryOrder) {
         queryOrder = new OrderMaker();
         queryLiteralOrder = new OrderMaker();
-        if (cnf.GetQueryOrder(*originalOrder, *queryOrder, *queryLiteralOrder) == 0) {
+        if (cnf.GetQueryOrder(*originalOrder, *queryOrder,
+                              *queryLiteralOrder) == 0) {
             // Linear search
             return getEqualToLiteral(fetchme, cnf, literal);
         } else {
             // Binary search to get the right page into the buffer
-            off_t candidatePageIndex = binarySearch(pageIndex,dataFile.GetLength()-2,literal);
-            if (candidatePageIndex == -1) { 
+            off_t candidatePageIndex =
+                binarySearch(pageIndex, dataFile.GetLength() - 2, literal);
+            if (candidatePageIndex == -1) {
                 return 0;
             } else if (candidatePageIndex != pageIndex) {
                 pageIndex = candidatePageIndex;
                 buffer.EmptyItOut();
                 dataFile.GetPage(&buffer, pageIndex);
                 status = buffer.GetFirst(&fetchme);
-            } else if (candidatePageIndex == 0) { // handle case when move first in not explicitly called in read mode
-                status = buffer.GetFirst(&fetchme);  
+            } else if (candidatePageIndex == 0) {  // handle case when move
+                                                   // first in not explicitly
+                                                   // called in read mode
+                status = buffer.GetFirst(&fetchme);
                 if (!status) {
                     dataFile.GetPage(&buffer, pageIndex);
                     status = buffer.GetFirst(&fetchme);
                 }
             }
         }
-    } else { //Else there are candidate records in the buffer
+    } else {  // Else there are candidate records in the buffer
         status = buffer.GetFirst(&fetchme);
         if (!status) {
             if (dataFile.GetLength() <= pageIndex + 2) return 0;
@@ -171,19 +235,22 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
     }
 
     ComparisonEngine comp;
-    
-    //Find first record in the buffer that satisfies queryOrder
-    while (status && comp.Compare(&fetchme, queryOrder, &literal, queryLiteralOrder) == -1) {
+
+    // Find first record in the buffer that satisfies queryOrder
+    while (status && comp.Compare(&fetchme, queryOrder, &literal,
+                                  queryLiteralOrder) == -1) {
         status = buffer.GetFirst(&fetchme);
     }
 
-    if(!status) { // Boundary condition: very first match found as the first record of the next page
+    if (!status) {  // Boundary condition: very first match found as the first
+                    // record of the next page
         if (dataFile.GetLength() <= pageIndex + 2) return 0;
         dataFile.GetPage(&buffer, ++pageIndex);
         status = buffer.GetFirst(&fetchme);
     }
-    
-    while (comp.Compare(&fetchme, queryOrder, &literal, queryLiteralOrder) == 0) {
+
+    while (comp.Compare(&fetchme, queryOrder, &literal, queryLiteralOrder) ==
+           0) {
         if (comp.Compare(&fetchme, &literal, &cnf)) {
             return 1;
         }
@@ -207,10 +274,13 @@ off_t SortedDBFile::binarySearch(off_t start, off_t end, Record &literal) {
         Record tempRec;
         dataFile.GetPage(&tempBuffer, mid);
         tempBuffer.GetFirst(&tempRec);
-        if (comp.Compare(&tempRec, queryOrder, &literal, queryLiteralOrder) >= 0) {
+        if (comp.Compare(&tempRec, queryOrder, &literal, queryLiteralOrder) >=
+            0) {
             end = mid - 1;
-        } else if (start == mid) start = mid + 1;
-        else start = mid;
+        } else if (start == mid)
+            start = mid + 1;
+        else
+            start = mid;
     }
     return end < 0 ? 0 : end;
 }

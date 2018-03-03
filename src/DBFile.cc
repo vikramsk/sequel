@@ -1,4 +1,5 @@
 #include "DBFile.h"
+#include <fstream>
 #include <iostream>
 #include "Comparison.h"
 #include "ComparisonEngine.h"
@@ -7,15 +8,50 @@
 #include "Record.h"
 #include "Schema.h"
 #include "TwoWayList.h"
-#include "string.h"
 #include "stdlib.h"
+#include "string.h"
 
 using namespace std;
 
-DBFile::DBFile() {
-    dbInstance = NULL;
-}
+DBFile::DBFile() { dbInstance = NULL; }
 DBFile::~DBFile() {}
+
+char *getMetaFilePath(const char *f_path) {
+    char *p = strdup(f_path);
+    string path(p);
+
+    size_t start_pos = path.find(".bin");
+    path.replace(start_pos, 4, ".meta");
+    return strdup(path.c_str());
+}
+
+void createMetaFile(char *filePath, fType type) {
+    ofstream metaFile(filePath);
+
+    if (metaFile.is_open()) {
+        if (type == heap)
+            metaFile << "heap\n";
+        else
+            metaFile << "sorted\n";
+        metaFile.close();
+    }
+}
+
+fType readFileType(char *filePath) {
+    string type;
+    fType fileType;
+    ifstream metaFile(filePath);
+
+    if (metaFile.is_open()) {
+        getline(metaFile, type);
+        if (type.compare("heap") == 0)
+            fileType = heap;
+        else
+            fileType = sorted;
+        metaFile.close();
+    }
+    return fileType;
+}
 
 int DBFile::Create(const char *f_path, fType f_type, void *startup) {
     if (dbInstance) {
@@ -28,19 +64,17 @@ int DBFile::Create(const char *f_path, fType f_type, void *startup) {
         dbInstance = new SortedDBFile();
     }
 
+    createMetaFile(getMetaFilePath(f_path), f_type);
     return dbInstance->Create(f_path, f_type, startup);
 }
 
 GenericDBFile *DBFile::getInstance(const char *f_path) {
-    char *p = strdup(f_path);
-    string path(p);
-    // path(f_path);
-
-    size_t start_pos = path.find(".bin");
-    path.replace(start_pos, 4, ".meta");
-
-    cout << path << endl;
-    return new HeapDBFile();
+    fType type;
+    type = readFileType(getMetaFilePath(f_path));
+    if (type == heap)
+        return new HeapDBFile();
+    else
+        return new SortedDBFile();
 }
 
 void DBFile::Load(Schema &f_schema, const char *loadpath) {
