@@ -141,7 +141,7 @@ void SortedDBFile::mergeRecords() {
     off_t newPageIndex = 0;
     ComparisonEngine comp;
 
-    while (fileStatus || pipeStatus) {
+    while (fileStatus && pipeStatus) {
         int status = comp.Compare(&fileRecord, &pipeRecord, originalOrder);
         if (status < 0) {
             bufferAppend(&fileRecord, newDataFile, newFilePage, newPageIndex);
@@ -152,8 +152,19 @@ void SortedDBFile::mergeRecords() {
         }
     }
 
+    while (fileStatus) {
+        bufferAppend(&fileRecord, newDataFile, newFilePage, newPageIndex);
+        fileStatus = GetNext(fileRecord);
+    }
+
+    while (pipeStatus) {
+        bufferAppend(&pipeRecord, newDataFile, newFilePage, newPageIndex);
+        pipeStatus = outPipe->Remove(&pipeRecord);
+    }
+
     newDataFile.AddPage(&newFilePage,
                         newPageIndex);  // write remaining records to file
+    newDataFile.Close();
     Close();
     remove(filePath);
     rename(newFilePath, filePath);
