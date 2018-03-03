@@ -79,11 +79,11 @@ int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
     return 1;
 }
 
-void bufferAppend(Record *rec, File &file, Page &buf, off_t &pageIndex) {
+void bufferAppend(Record *rec, File &file, Page &buf, off_t &index) {
     int appendResult = buf.Append(rec);
     if (appendResult == 0) {  // indicates that the page is full
         file.AddPage(&buf,
-                     pageIndex++);  // write loaded buffer to file
+                     index++);  // write loaded buffer to file
         buf.EmptyItOut();
         buf.Append(rec);
     }
@@ -130,7 +130,8 @@ void SortedDBFile::mergeRecords() {
     strcat(newFilePath, "1");
 
     newDataFile.Open(0, newFilePath);
-
+    
+    MoveFirst();
     int fileStatus = GetNext(fileRecord);
     int pipeStatus = outPipe->Remove(&pipeRecord);
     off_t newPageIndex = 0;
@@ -192,7 +193,7 @@ void SortedDBFile::MoveFirst() {
         queryLiteralOrder = NULL;
     }
     pageIndex = 0;
-    dataFile.GetPage(&buffer, pageIndex);
+    if (dataFile.GetLength()>0) dataFile.GetPage(&buffer, pageIndex);
 }
 
 int SortedDBFile::Close() {
@@ -240,33 +241,31 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
             // Linear search
             return getEqualToLiteral(fetchme, cnf, literal);
         } else {
-            // Binary search to get the right page into the buffer
+            // Binary search to get the next candidate page into the buffer
             off_t candidatePageIndex =
                 binarySearch(pageIndex, dataFile.GetLength() - 2, literal);
             if (candidatePageIndex == -1) {
                 return 0;
-            } else if (candidatePageIndex != pageIndex) {
+            } else if (candidatePageIndex > pageIndex) {
                 pageIndex = candidatePageIndex;
                 buffer.EmptyItOut();
                 dataFile.GetPage(&buffer, pageIndex);
                 status = buffer.GetFirst(&fetchme);
-            } else if (candidatePageIndex == 0) {  // handle case when move
-                                                   // first in not explicitly
-                                                   // called in read mode
+            } else {
+                    // handles the following cases:
+                    // 1. (candidatePageIndex = pageIndex)
+                    // 2. (candidatePageIndex = pageIndex = 0) with empty buffer
+                    // 3. (candidatePageIndex = pageIndex - 1) 
+                    // In Case 3 we simply resume from where we left
                 status = buffer.GetFirst(&fetchme);
-                if (!status) {
+                if (!status && candidatePageIndex == pageIndex && pageIndex == 0) { 
                     dataFile.GetPage(&buffer, pageIndex);
                     status = buffer.GetFirst(&fetchme);
-                }
+                } 
             }
         }
     } else {  // Else there are candidate records in the buffer
         status = buffer.GetFirst(&fetchme);
-        if (!status) {
-            if (dataFile.GetLength() <= pageIndex + 2) return 0;
-            dataFile.GetPage(&buffer, ++pageIndex);
-            status = buffer.GetFirst(&fetchme);
-        }
     }
 
     ComparisonEngine comp;
