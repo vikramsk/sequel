@@ -118,10 +118,11 @@ void OrderMaker :: Print () {
 }
 
 
-int CNF :: GetQueryOrder(OrderMaker &sortOrder, OrderMaker &queryOrder) {
+int CNF :: GetQueryOrder(OrderMaker &sortOrder, OrderMaker &queryOrder, OrderMaker &queryLiteralOrder) {
 	
 	// initialize the size of the query OrderMaker
 	queryOrder.numAtts = 0;
+	queryLiteralOrder.numAtts = 0;
 	
 	for (int k = 0; k < sortOrder.numAtts; k++) {
 		
@@ -137,32 +138,36 @@ int CNF :: GetQueryOrder(OrderMaker &sortOrder, OrderMaker &queryOrder) {
 			if (orLens[i] != 1) {
 				continue;
 			}
-
-			// verify that it is comparing the attribute with a literal value
-			if (orList[i][0].operand1 != Literal && orList[i][0].operand2 != Literal) {
-				continue;
-			}
 			
 			// made it this far, now verify that it is an equality check
 			if (orList[i][0].op != Equals) {
 				continue;
 			}
 
-			//Compare the right operand to find if the same attribute is in use
-			if (orList[i][0].operand1 == Literal) foundAttr = orList[i][0].whichAtt2 == attr;
-			else foundAttr = orList[i][0].whichAtt1 == attr;
+			// verify that it is comparing the attribute with a literal value
+			// Also check if the other operand is the same as the attribute we are seeking
+			if (orList[i][0].operand1 == Literal && orList[i][0].whichAtt2 == attr) {
+				foundAttr = true;
+				queryLiteralOrder.whichAtts[queryLiteralOrder.numAtts] = orList[i][0].whichAtt1;
+				
+			} else if (orList[i][0].operand2 == Literal && orList[i][0].whichAtt1 == attr) {
+				foundAttr = true;
+				queryLiteralOrder.whichAtts[queryLiteralOrder.numAtts] = orList[i][0].whichAtt2;
+			}
 			
 			if (foundAttr) break;
 		}
 
 		if (!foundAttr) break;
-
+		
 		// since we are here, we have found an eligible attribute!!!
 		// so all we need to do is add this attribute info to the
 		// end of our query structure
 		queryOrder.whichAtts[queryOrder.numAtts] = attr;
 		queryOrder.whichTypes[queryOrder.numAtts] = sortOrder.whichTypes[k];
+		queryLiteralOrder.whichTypes[queryLiteralOrder.numAtts] = sortOrder.whichTypes[k];
 		queryOrder.numAtts++;
+		queryLiteralOrder.numAtts++;
 	}
 
 	return queryOrder.numAtts;
