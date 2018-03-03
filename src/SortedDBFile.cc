@@ -1,4 +1,4 @@
-#include <fstream>
+
 #include <iostream>
 #include "Comparison.h"
 #include "ComparisonEngine.h"
@@ -11,7 +11,6 @@
 #include "stdlib.h"
 #include "string.h"
 
-// Called on file create
 SortedDBFile::SortedDBFile(const char *f_path) : filePath(f_path) {
     pageIndex = 0;
     queryOrder = NULL;
@@ -20,18 +19,6 @@ SortedDBFile::SortedDBFile(const char *f_path) : filePath(f_path) {
     outPipe = new Pipe(100);
     bigQ = NULL;
 }
-
-// Called on file open
-// SortedDBFile::SortedDBFile(OrderMaker *o, int r) {
-//    pageIndex = 0;
-//    queryOrder = NULL;
-//    queryLiteralOrder = NULL;
-//    inPipe = new Pipe(100);
-//    outPipe = new Pipe(100);
-//    bigQ = NULL;
-//    originalOrder = o;
-//    runLength = r;
-//}
 
 typedef struct SortInfo {
     OrderMaker *o;
@@ -93,8 +80,27 @@ int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
     return 1;
 }
 
+void bufferAppend(Record *rec, File &file, Page &buf, off_t &pageIndex) {
+    int appendResult = buf.Append(rec);
+    if (appendResult == 0) {  // indicates that the page is full
+        file.AddPage(&buf,
+                     pageIndex++);  // write loaded buffer to file
+        buf.EmptyItOut();
+        buf.Append(rec);
+    }
+}
+
 void SortedDBFile::Load(Schema &f_schema, const char *loadpath) {
     if (!bigQ) bigQ = new BigQ(*inPipe, *outPipe, *originalOrder, runLength);
+
+    mode = WRITE;
+    Record temp;
+    // open up the text file and start processing it
+    FILE *tableFile = fopen(loadpath, "r");
+    // read in all of the records from the text file
+    while (temp.SuckNextRecord(&f_schema, tableFile) == 1) {
+        Add(temp);
+    }
 }
 
 void SortedDBFile::flushBuffer() {
@@ -112,16 +118,6 @@ void SortedDBFile::flushBuffer() {
         free(queryLiteralOrder);
         queryOrder = NULL;
         queryLiteralOrder = NULL;
-    }
-}
-
-void bufferAppend(Record *rec, File &file, Page &buf, off_t &pageIndex) {
-    int appendResult = buf.Append(rec);
-    if (appendResult == 0) {  // indicates that the page is full
-        file.AddPage(&buf,
-                     pageIndex++);  // write loaded buffer to file
-        buf.EmptyItOut();
-        buf.Append(rec);
     }
 }
 

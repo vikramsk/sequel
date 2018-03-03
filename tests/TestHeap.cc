@@ -263,6 +263,46 @@ TEST(HeapFileTest, GetNextFromEmptyFile) {
 //    int rc = pthread_join(bigQInstance.worker, &status);
 //}
 
+TEST(SortedFileTest, Load) {
+    // setup(catalog_path, dbfile_dir, tpch_dir);
+    setup("data/catalog", "build/tests/", "data/10M/");
+    relation *rel_ptr = li;
+
+    OrderMaker om;
+    rel_ptr->get_sort_order(om);
+
+    int runlen = 2;
+    struct {
+        OrderMaker *o;
+        int l;
+    } startup = {&om, runlen};
+
+    DBFile dbfile;
+    dbfile.Create(rel_ptr->path(), sorted, &startup);
+
+    char tbl_path[100];  // construct path of the tpch flat text file
+    sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel_ptr->name());
+    dbfile.Load(*(rel_ptr->schema()), tbl_path);
+    dbfile.Close();
+
+    File file;
+    char *pathStr = strdup(rel_ptr->path());
+    file.Open(1, pathStr);
+    free(pathStr);
+    Page buffer;
+    off_t noOfPages = file.GetLength() - 1;
+    ASSERT_GT(noOfPages, 0);
+
+    Record temp;
+    for (off_t page = 0; page < noOfPages; page++) {
+        file.GetPage(&buffer, page);
+        ASSERT_EQ(buffer.GetFirst(&temp), 1);
+        buffer.EmptyItOut();
+    }
+    file.Close();
+    cleanup();
+}
+
 TEST(SortedFileTest, GetNextWithSelectionPredicate) {
     setup("data/catalog", "build/tests/", "data/10M/");
     relation *rel_ptr = li;
@@ -296,6 +336,8 @@ TEST(SortedFileTest, GetNextWithSelectionPredicate) {
 
     CNF cnf;
     Record literal;
+    cin.clear();
+    std::cin.ignore(INT_MAX);
     rel_ptr->get_cnf(cnf, literal);
     dbfile.MoveFirst();
 
