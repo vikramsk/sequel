@@ -53,6 +53,7 @@ void writeToMetaFile(const char *f_path, void *startup) {
     metaFile << si->l << endl;
     OrderMaker *om = (OrderMaker *)si->o;
     metaFile << *om;
+    metaFile.close();
 }
 
 int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
@@ -78,9 +79,9 @@ void SortedDBFile::Load(Schema &f_schema, const char *loadpath) {}
 
 void SortedDBFile::flushBuffer() {
     inPipe->ShutDown();
-    mergeRecords();
     dataFile.AddPage(&buffer, pageIndex);  // write remaining records to file
     buffer.EmptyItOut();
+    mergeRecords();
     mode = READ;
     pageIndex = 0;
     if (queryOrder) {
