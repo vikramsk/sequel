@@ -79,6 +79,7 @@ class SortedDBFile : public virtual GenericDBFile {
 
    public:
     SortedDBFile(const char *filePath);
+    SortedDBFile(OrderMaker *o, int r);
     ~SortedDBFile();
 
     int Create(const char *fpath, fType file_type, void *startup);

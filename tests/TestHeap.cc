@@ -275,7 +275,7 @@ TEST(SortedFileTest, GetNextWithSelectionPredicate) {
         int l;
     } startup = {&om, runlen};
 
-    SortedDBFile dbfile(rel_ptr->path());
+    DBFile dbfile;
     cout << "\n output to dbfile : " << rel_ptr->path() << endl;
     dbfile.Create(rel_ptr->path(), sorted, &startup);
 

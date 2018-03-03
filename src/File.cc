@@ -151,6 +151,8 @@ void File ::GetPage(Page *putItHere, off_t whichPage) {
     if (whichPage >= curLength) {
         cerr << "whichPage " << whichPage << " length " << curLength << endl;
         cerr << "BAD: you tried to read past the end of the file\n";
+        int x;
+        cin >> x; 
         exit(1);
     }
 

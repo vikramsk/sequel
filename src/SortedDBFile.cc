@@ -11,12 +11,26 @@
 #include "stdlib.h"
 #include "string.h"
 
+// Called on file create
 SortedDBFile::SortedDBFile(const char *f_path) : filePath(f_path) {
     pageIndex = 0;
     queryOrder = NULL;
     queryLiteralOrder = NULL;
     inPipe = new Pipe(100);
     outPipe = new Pipe(100);
+    bigQ = NULL;
+}
+
+// Called on file open
+SortedDBFile::SortedDBFile(OrderMaker *o, int r) {
+    pageIndex = 0;
+    queryOrder = NULL;
+    queryLiteralOrder = NULL;
+    inPipe = new Pipe(100);
+    outPipe = new Pipe(100);
+    bigQ = NULL;
+    originalOrder = o;
+    runLength = r;
 }
 
 typedef struct SortInfo {
@@ -60,21 +74,24 @@ int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
     SortInfo *sortInfo = (SortInfo *)startup;
     originalOrder = sortInfo->o;
     runLength = sortInfo->l;
-    // TODO: Determine when to free / reinitialize BigQ
-    bigQ = new BigQ(*inPipe, *outPipe, *originalOrder, 2);
     writeToMetaFile(f_path, startup);
     return 1;
 }
 
-void SortedDBFile::Load(Schema &f_schema, const char *loadpath) {}
+void SortedDBFile::Load(Schema &f_schema, const char *loadpath) {
+    if (!bigQ) bigQ = new BigQ(*inPipe, *outPipe, *originalOrder, runLength);
+}
 
 void SortedDBFile::flushBuffer() {
-    inPipe->ShutDown();
-    dataFile.AddPage(&buffer, pageIndex);  // write remaining records to file
     buffer.EmptyItOut();
-    mergeRecords();
     mode = READ;
     pageIndex = 0;
+    if (bigQ) {
+        inPipe->ShutDown();
+        mergeRecords();
+        free(bigQ);
+        bigQ = NULL;
+    }
     if (queryOrder) {
         free(queryOrder);
         free(queryLiteralOrder);
@@ -101,14 +118,10 @@ void SortedDBFile::mergeRecords() {
 
     char *newFilePath = strdup(filePath);
     strcat(newFilePath, "1");
-
-    SortedDBFile tempDBFile(newFilePath);
-
+    
     newDataFile.Open(0, newFilePath);
-    tempDBFile.Open(filePath);
-    tempDBFile.MoveFirst();
 
-    int fileStatus = tempDBFile.GetNext(fileRecord);
+    int fileStatus = GetNext(fileRecord);
     int pipeStatus = outPipe->Remove(&pipeRecord);
     off_t newPageIndex = 0;
     ComparisonEngine comp;
@@ -117,16 +130,18 @@ void SortedDBFile::mergeRecords() {
         int status = comp.Compare(&fileRecord, &pipeRecord, originalOrder);
         if (status < 0) {
             bufferAppend(&fileRecord, newDataFile, newFilePage, newPageIndex);
-            fileStatus = tempDBFile.GetNext(fileRecord);
+            fileStatus = GetNext(fileRecord);
         } else {
             bufferAppend(&pipeRecord, newDataFile, newFilePage, newPageIndex);
             pipeStatus = outPipe->Remove(&pipeRecord);
         }
     }
 
+    newDataFile.AddPage(&newFilePage, newPageIndex);  // write remaining records to file
+    Close();
     remove(filePath);
     rename(newFilePath, filePath);
-    this->Open(filePath);
+    Open(filePath);
 }
 
 int SortedDBFile::Open(const char *f_path) {
@@ -158,14 +173,11 @@ int SortedDBFile::Close() {
 }
 
 void SortedDBFile::Add(Record &rec) {
-    // TODO: Handle other things before setting mode to write
     if (mode == READ) {
         mode = WRITE;
     }
-
-    if (mode == WRITE) {
-        inPipe->Insert(&rec);
-    }
+    if (!bigQ) bigQ = new BigQ(*inPipe, *outPipe, *originalOrder, runLength);
+    inPipe->Insert(&rec);
 }
 
 int SortedDBFile::GetNext(Record &fetchme) {

@@ -54,10 +54,6 @@ fType readFileType(char *filePath) {
 }
 
 int DBFile::Create(const char *f_path, fType f_type, void *startup) {
-    if (dbInstance) {
-        return dbInstance->Create(f_path, f_type, startup);
-    }
-
     if (f_type == heap) {
         dbInstance = new HeapDBFile();
     } else if (f_type == sorted) {
@@ -73,8 +69,12 @@ GenericDBFile *DBFile::getInstance(const char *f_path) {
     type = readFileType(getMetaFilePath(f_path));
     if (type == heap)
         return new HeapDBFile();
-    else
-        return new SortedDBFile(f_path);
+    else {
+        OrderMaker sortOrder;
+        int runLength;
+        //TODO: Fetch sortOrder and runLength from meta file
+        return new SortedDBFile(&sortOrder,runLength);
+    }
 }
 
 void DBFile::Load(Schema &f_schema, const char *loadpath) {
