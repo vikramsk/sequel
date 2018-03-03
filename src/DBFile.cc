@@ -70,10 +70,7 @@ GenericDBFile *DBFile::getInstance(const char *f_path) {
     if (type == heap)
         return new HeapDBFile();
     else {
-        OrderMaker sortOrder;
-        int runLength;
-        //TODO: Fetch sortOrder and runLength from meta file
-        return new SortedDBFile(&sortOrder,runLength);
+        return new SortedDBFile(f_path);
     }
 }
 

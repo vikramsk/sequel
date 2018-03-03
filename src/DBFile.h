@@ -76,10 +76,11 @@ class SortedDBFile : public virtual GenericDBFile {
     // void bufferAppend(Record *rec);
     int getEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal);
     off_t binarySearch(off_t start, off_t end, Record &literal);
+    void readMetaFile(const char *f_path);
 
    public:
     SortedDBFile(const char *filePath);
-    SortedDBFile(OrderMaker *o, int r);
+    // SortedDBFile(OrderMaker *o, int r);
     ~SortedDBFile();
 
     int Create(const char *fpath, fType file_type, void *startup);

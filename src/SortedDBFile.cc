@@ -22,16 +22,16 @@ SortedDBFile::SortedDBFile(const char *f_path) : filePath(f_path) {
 }
 
 // Called on file open
-SortedDBFile::SortedDBFile(OrderMaker *o, int r) {
-    pageIndex = 0;
-    queryOrder = NULL;
-    queryLiteralOrder = NULL;
-    inPipe = new Pipe(100);
-    outPipe = new Pipe(100);
-    bigQ = NULL;
-    originalOrder = o;
-    runLength = r;
-}
+// SortedDBFile::SortedDBFile(OrderMaker *o, int r) {
+//    pageIndex = 0;
+//    queryOrder = NULL;
+//    queryLiteralOrder = NULL;
+//    inPipe = new Pipe(100);
+//    outPipe = new Pipe(100);
+//    bigQ = NULL;
+//    originalOrder = o;
+//    runLength = r;
+//}
 
 typedef struct SortInfo {
     OrderMaker *o;
@@ -59,6 +59,21 @@ void writeToMetaFile(const char *f_path, void *startup) {
     OrderMaker *om = (OrderMaker *)si->o;
     metaFile << *om;
     metaFile.close();
+}
+
+void SortedDBFile::readMetaFile(const char *f_path) {
+    ifstream metaFile(metaFilePath(f_path));
+
+    OrderMaker *om = new OrderMaker();
+    string fileType;
+    getline(metaFile, fileType);
+
+    int runLen;
+    metaFile >> runLen;
+    metaFile >> *om;
+
+    originalOrder = om;
+    runLength = runLen;
 }
 
 int SortedDBFile::Create(const char *f_path, fType f_type, void *startup) {
@@ -118,7 +133,7 @@ void SortedDBFile::mergeRecords() {
 
     char *newFilePath = strdup(filePath);
     strcat(newFilePath, "1");
-    
+
     newDataFile.Open(0, newFilePath);
 
     int fileStatus = GetNext(fileRecord);
@@ -137,7 +152,8 @@ void SortedDBFile::mergeRecords() {
         }
     }
 
-    newDataFile.AddPage(&newFilePage, newPageIndex);  // write remaining records to file
+    newDataFile.AddPage(&newFilePage,
+                        newPageIndex);  // write remaining records to file
     Close();
     remove(filePath);
     rename(newFilePath, filePath);
@@ -145,10 +161,17 @@ void SortedDBFile::mergeRecords() {
 }
 
 int SortedDBFile::Open(const char *f_path) {
-    if (mode == WRITE) flushBuffer();
+    readMetaFile(f_path);
+    // if (mode == WRITE) flushBuffer();
     char *pathStr = strdup(f_path);
     dataFile.Open(1, pathStr);
     free(pathStr);
+    pageIndex = 0;
+    queryOrder = NULL;
+    queryLiteralOrder = NULL;
+    inPipe = new Pipe(100);
+    outPipe = new Pipe(100);
+    bigQ = NULL;
     return 1;
 }
 
