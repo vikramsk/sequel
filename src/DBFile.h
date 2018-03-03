@@ -78,8 +78,7 @@ class SortedDBFile : public virtual GenericDBFile {
     off_t binarySearch(off_t start, off_t end, Record &literal);
 
    public:
-    SortedDBFile();
-    SortedDBFile(OrderMaker *order);
+    SortedDBFile(const char *filePath);
     ~SortedDBFile();
 
     int Create(const char *fpath, fType file_type, void *startup);

@@ -275,7 +275,7 @@ TEST(SortedFileTest, GetNextWithSelectionPredicate) {
         int l;
     } startup = {&om, runlen};
 
-    SortedDBFile dbfile;
+    SortedDBFile dbfile(rel_ptr->path());
     cout << "\n output to dbfile : " << rel_ptr->path() << endl;
     dbfile.Create(rel_ptr->path(), sorted, &startup);
 
@@ -301,7 +301,7 @@ TEST(SortedFileTest, GetNextWithSelectionPredicate) {
 
     int cnt = 0;
     cerr << "\t";
-    while (dbfile.GetNext(temp,cnf,literal) && ++cnt) {
+    while (dbfile.GetNext(temp, cnf, literal) && ++cnt) {
         temp.Print(rel_ptr->schema());
     }
     cout << "\n query over " << rel_ptr->path() << " returned " << cnt

@@ -61,7 +61,7 @@ int DBFile::Create(const char *f_path, fType f_type, void *startup) {
     if (f_type == heap) {
         dbInstance = new HeapDBFile();
     } else if (f_type == sorted) {
-        dbInstance = new SortedDBFile();
+        dbInstance = new SortedDBFile(f_path);
     }
 
     createMetaFile(getMetaFilePath(f_path), f_type);
@@ -74,7 +74,7 @@ GenericDBFile *DBFile::getInstance(const char *f_path) {
     if (type == heap)
         return new HeapDBFile();
     else
-        return new SortedDBFile();
+        return new SortedDBFile(f_path);
 }
 
 void DBFile::Load(Schema &f_schema, const char *loadpath) {

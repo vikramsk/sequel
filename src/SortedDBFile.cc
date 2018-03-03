@@ -11,21 +11,12 @@
 #include "stdlib.h"
 #include "string.h"
 
-SortedDBFile::SortedDBFile() {
+SortedDBFile::SortedDBFile(const char *f_path) : filePath(f_path) {
     pageIndex = 0;
     queryOrder = NULL;
     queryLiteralOrder = NULL;
     inPipe = new Pipe(100);
     outPipe = new Pipe(100);
-    //*originalOrder = startup;
-}
-
-SortedDBFile::SortedDBFile(OrderMaker *order) {
-    pageIndex = 0;
-    queryOrder = NULL;
-    inPipe = new Pipe(100);
-    outPipe = new Pipe(100);
-    originalOrder = order;
 }
 
 typedef struct SortInfo {
@@ -107,10 +98,12 @@ void SortedDBFile::mergeRecords() {
     Record fileRecord;
     File newDataFile;
     Page newFilePage;
-    SortedDBFile tempDBFile;
 
     char *newFilePath = strdup(filePath);
     strcat(newFilePath, "1");
+
+    SortedDBFile tempDBFile(newFilePath);
+
     newDataFile.Open(0, newFilePath);
     tempDBFile.Open(filePath);
     tempDBFile.MoveFirst();
