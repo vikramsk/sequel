@@ -66,13 +66,15 @@ class SortedDBFile : public virtual GenericDBFile {
     int runLength;
     OrderMaker *originalOrder;
     OrderMaker *queryOrder;
+    OrderMaker *queryLiteralOrder;
     Page buffer;
     off_t pageIndex;
 
     void flushBuffer();
     void mergeRecords();
     void bufferAppend(Record *rec);
-    int GetEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal);
+    int getEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal);
+    off_t binarySearch(off_t start, off_t end, Record &literal);
 
    public:
     SortedDBFile();

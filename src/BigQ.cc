@@ -31,7 +31,7 @@ struct MergeSortHelper {
     ComparisonEngine comp;
     OrderMaker *ordering;
     bool operator()(recordTracker *a, recordTracker *b) {
-        return comp.Compare(a->record, b->record, ordering) < 0;
+        return comp.Compare(a->record, b->record, ordering) > 0;
     }
 
    public:

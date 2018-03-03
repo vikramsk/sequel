@@ -84,7 +84,11 @@ public:
 	// for the given comparison
 	int GetSortOrders (OrderMaker &left, OrderMaker &right);
 	
-	int GetQueryOrder(OrderMaker &sortOrder, OrderMaker &queryOrder);
+	// this method uses the sort order of the sorted file and builds 
+	// query orders from the current cnf instance. Returns a 0 if
+	// the cnf instance has no sorting attributes that can be used
+	// to optimize search
+	int GetQueryOrder(OrderMaker &sortOrder, OrderMaker &queryOrder, OrderMaker &queryLiteralOrder);
 
 	// print the comparison structure to the screen
 	void Print ();

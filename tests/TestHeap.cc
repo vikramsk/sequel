@@ -198,7 +198,7 @@ TEST(HeapFileTest, GetNextFromEmptyFile) {
 //     Record temp;
 //     int numrecs = 10000;
 //     while ((res = temp.SuckNextRecord(rel_ptr->schema(), tblfile)) &&
-//            ++proc < numrecs) {
+//         ++proc < numrecs) {
 //         inputPipe.Insert(&temp);
 //     }
 //     tot += proc;
@@ -216,13 +216,12 @@ TEST(HeapFileTest, GetNextFromEmptyFile) {
 //     ASSERT_FALSE(rc);
 //     /*
 //     if (rc) {
-//           cout<<"ERROR; return code from pthread_join() is " << rc << endl;
-//           exit(-1);
-//           }
-//        cout << "Main: completed join with worker thread having a status of
-//        "<<
-//     (long)status << endl;
-//     */
+//         cout<<"ERROR; return code from pthread_join() is " << rc << endl;
+//         exit(-1);
+//     }
+//     cout << "Main: completed join with worker thread having a status of
+//         "<<(long)status << endl;
+//      */
 //     cleanup();
 // }
 
@@ -302,11 +301,8 @@ TEST(SortedFileTest, GetNextWithSelectionPredicate) {
 
     int cnt = 0;
     cerr << "\t";
-    while (dbfile.GetNext(temp, cnf, literal) && ++cnt) {
+    while (dbfile.GetNext(temp,cnf,literal) && ++cnt) {
         temp.Print(rel_ptr->schema());
-        if (cnt % 10000 == 0) {
-            cerr << ".";
-        }
     }
     cout << "\n query over " << rel_ptr->path() << " returned " << cnt
          << " recs\n";
