@@ -161,7 +161,6 @@ void SortedDBFile::mergeRecords() {
     newDataFile.AddPage(&newFilePage,
                         newPageIndex);  // write remaining records to file
     newDataFile.Close();
-    Close();
     remove(filePath);
     rename(newFilePath, filePath);
     Open(filePath);
@@ -169,7 +168,6 @@ void SortedDBFile::mergeRecords() {
 
 int SortedDBFile::Open(const char *f_path) {
     readMetaFile(f_path);
-    // if (mode == WRITE) flushBuffer();
     char *pathStr = strdup(f_path);
     dataFile.Open(1, pathStr);
     free(pathStr);
@@ -197,7 +195,8 @@ void SortedDBFile::MoveFirst() {
 }
 
 int SortedDBFile::Close() {
-    if (mode == WRITE) flushBuffer();
+    //if (mode == WRITE) 
+    flushBuffer();
     dataFile.Close();
     return 1;
 }
