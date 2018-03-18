@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include "Comparison.h"
 #include "ComparisonEngine.h"
