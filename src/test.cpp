@@ -233,7 +233,7 @@ void q5() {
 
     WriteOut W;
     // inpipe = ___ps
-    char *fwpath = "ps.w.tmp";
+    char *fwpath = "build/dbfiles/ps.w.tmp";
     FILE *writefile = fopen(fwpath, "w");
 
     SF_ps.Run(dbf_ps, _ps, cnf_ps, lit_ps);
