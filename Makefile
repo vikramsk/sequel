@@ -11,6 +11,12 @@ else
 	tag = 'sed -i "" "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" build/src/y.tab.c"'
 endif
 
+ifeq ($(platform),Linux)
+	tag1 = 'sed -n build/src/yyfunc.tab.c -e "s/  _attribute_ ((_unused))$$/# ifndef __cplusplus\n  __attribute_ ((_unused_));\n# endif/"'
+else
+	tag1 = 'sed -i "" "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" build/src/yyfunc.tab.c"'
+endif
+
 BUILD_DIR ?= build
 SRC_DIR ?= src
 TEST_DIR ?= tests
@@ -30,8 +36,8 @@ all: main test.out testsuite
 main: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/main.o
 	$(CC) $(CXXFLAGS) $(OBJS) build/src/main.o  build/src/y.tab.o build/src/lex.yy.o -o build/$@
 
-test.out: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/test.o dbfolder
-	$(CC) $(CXXFLAGS) $(OBJS) build/src/test.o build/src/y.tab.o build/src/lex.yy.o -o build/test.out  -ll
+test.out: $(OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o build/src/test.o dbfolder
+	$(CC) $(CXXFLAGS) $(OBJS) build/src/test.o build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o -o build/test.out  -ll
 
 build/src/main.o: src/main.cpp
 	$(CC) -g -c src/main.cpp -o $@
@@ -39,11 +45,24 @@ build/src/main.o: src/main.cpp
 build/src/test.o: src/test.cpp
 	$(CC) -g -c src/test.cpp -o $@
 	
-build/src/y.tab.o: src/Parser.y src/ParseTree.h
+build/src/y.tab.o: src/Parser.y 
 	yacc -d src/Parser.y -o build/src/y.tab.c
 	$(shell $(tag))
 	g++ -c -Isrc/ build/src/y.tab.c 
 	mv y.tab.o build/src/
+
+build/src/yyfunc.tab.o: src/ParserFunc.y
+	yacc -p "yyfunc" -b "yyfunc" -d src/ParserFunc.y -o build/src/yyfunc.tab.c
+	$(shell $(tag1))
+	#sed $(tag) yyfunc.tab.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" 
+	g++ -c -Isrc/ build/src/yyfunc.tab.c
+	mv yyfunc.tab.o build/src/
+
+build/src/lex.yyfunc.o: src/LexerFunc.l
+	lex -Pyyfunc src/LexerFunc.l
+	mv lex.yyfunc.c build/src/
+	gcc -c -Isrc/ build/src/lex.yyfunc.c
+	mv lex.yyfunc.o build/src/
 
 build/src/lex.yy.o: src/Lexer.l
 	lex  src/Lexer.l 
@@ -97,8 +116,8 @@ gtest.a : gtest-all.o
 gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
-testsuite: $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/lex.yy.o gtest.a dbfolder
-	$(CC) $(CXXFLAGS) -Isrc $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/lex.yy.o gtest.a -o $@
+testsuite: $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o gtest.a dbfolder
+	$(CC) $(CXXFLAGS) -Isrc $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/yyfunc.tab.o build/src/lex.yyfunc.o gtest.a -o $@
 	mv $@ build
 
 .PHONY: clean
