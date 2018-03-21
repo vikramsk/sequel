@@ -46,6 +46,9 @@ public:
 	// this reads the specification for the schema in from a file
 	Schema (const char *fName, const char *relName);
 
+	// this composes a schema instance in-memory
+	Schema (char *fName, int num_atts, Attribute *atts);
+
 	// this constructs a sort order structure that can be used to
 	// place a lexicographic ordering on the records using this type of schema
 	int GetSortOrder (OrderMaker &order);
