@@ -68,6 +68,10 @@ public:
 	// prints the contents of the record; this requires
 	// that the schema also be given so that the record can be interpreted
 	void Print (Schema *mySchema);
+
+	// returns the text version of the record in a string; this requires
+	// that the schema also be given so that the record can be interpreted
+	std::string GetTextVersion (Schema *mySchema);
 };
 
 #endif

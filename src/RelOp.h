@@ -6,6 +6,8 @@
 #include "Record.h"
 #include "Function.h"
 
+#include <string>
+
 class RelationalOp {
 	public:
 	// blocks the caller until the particular relational operator 
@@ -67,9 +69,19 @@ class GroupBy : public RelationalOp {
 	void Use_n_Pages (int n) { }
 };
 class WriteOut : public RelationalOp {
+	
+	private:
+	pthread_t thread;
+	std::string buffer;
+	Pipe *in;
+	FILE *outputFile;
+	Schema *schema;
+	
+	static void *writeTextFile(void *voidArgs);
+
 	public:
-	void Run (Pipe &inPipe, FILE *outFile, Schema &mySchema) { }
-	void WaitUntilDone () { }
-	void Use_n_Pages (int n) { }
+	void Run (Pipe &inPipe, FILE *outFile, Schema &mySchema);
+	void WaitUntilDone ();
+	void Use_n_Pages (int n);
 };
 #endif
