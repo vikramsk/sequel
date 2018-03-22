@@ -63,12 +63,21 @@ class DuplicateRemoval : public RelationalOp {
 	public:
 	void Run (Pipe &inPipe, Pipe &outPipe, Schema &mySchema);
 	void WaitUntilDone ();
-	void Use_n_Pages (int n);
+	void Use_n_Pages (int n) {}
 };
 class Sum : public RelationalOp {
+
+	private:
+	pthread_t thread;
+	Pipe *in;
+	Pipe *out;
+	Function *func;
+	
+	static void *computeSum(void *voidArgs);
+
 	public:
-	void Run (Pipe &inPipe, Pipe &outPipe, Function &computeMe) { }
-	void WaitUntilDone () { }
+	void Run (Pipe &inPipe, Pipe &outPipe, Function &computeMe);
+	void WaitUntilDone ();
 	void Use_n_Pages (int n) { }
 };
 class GroupBy : public RelationalOp {

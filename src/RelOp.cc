@@ -16,7 +16,8 @@ void *DuplicateRemoval::bigQDuplicateRemoval(void *voidArgs) {
 	Pipe sortedOutput(100); //this buffer size is based on the test input
 	OrderMaker om(args->schema);
 	BigQ bigQInstance(*(args->in), sortedOutput, om, 1);
-	args->in->ShutDown();
+	// TODO: make sure that the input pipe is shutdown in its predecessor 
+	// args->in->ShutDown();
 	
 	Record currentRec;
 	Record previousRec;
@@ -61,7 +62,41 @@ void DuplicateRemoval::WaitUntilDone () {
 	pthread_join (thread, NULL);
 }
 
-void DuplicateRemoval::Use_n_Pages (int runlen) {
+void *Sum::computeSum(void *voidArgs) {
+	Sum *args = (Sum *)voidArgs;
+	Record rec;
+    double sum = 0;
+    while (args->in->Remove(&rec)) {
+        int ival = 0;
+        double dval = 0;
+        args->func->Apply(rec, ival, dval);
+        sum += (ival + dval);
+    }
+	Attribute sumType = {"double", Double};
+	Schema out_schema("out_schema", 1, &sumType);
+    Record sumRec;
+	std::string val = std::to_string(sum) + "|";
+	sumRec.ComposeRecord(&out_schema,val.c_str());
+	args->out->Insert(&sumRec);
+	args->out->ShutDown();
+    pthread_exit(NULL);
+}
+
+void Sum::Run (Pipe &inPipe, Pipe &outPipe, Function &computeMe) { 
+	in = &inPipe;
+	out = &outPipe;
+	func = &computeMe;
+	
+	/* Initialize and set thread detached attribute */
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_create(&thread, NULL, &Sum::computeSum, this);
+    pthread_attr_destroy(&attr);
+}
+
+void Sum::WaitUntilDone () { 
+	pthread_join (thread, NULL);
 }
 
 void *WriteOut::writeTextFile(void *voidArgs) {
