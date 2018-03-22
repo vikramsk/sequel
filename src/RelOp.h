@@ -51,10 +51,19 @@ class Join : public RelationalOp {
 	void Use_n_Pages (int n) { }
 };
 class DuplicateRemoval : public RelationalOp {
+	
+	private:
+	pthread_t thread;
+	Pipe *in;
+	Pipe *out;
+	Schema *schema;
+
+	static void *bigQDuplicateRemoval(void *voidArgs);
+	
 	public:
-	void Run (Pipe &inPipe, Pipe &outPipe, Schema &mySchema) { }
-	void WaitUntilDone () { }
-	void Use_n_Pages (int n) { }
+	void Run (Pipe &inPipe, Pipe &outPipe, Schema &mySchema);
+	void WaitUntilDone ();
+	void Use_n_Pages (int n);
 };
 class Sum : public RelationalOp {
 	public:
