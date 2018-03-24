@@ -36,7 +36,12 @@ void SelectFile::WaitUntilDone() { worker.wait(); }
 void Project::Run(Pipe &inPipe, Pipe &outPipe, int *keepMe, int numAttsInput,
                   int numAttsOutput) {
     worker = std::async([&, this] {
-
+        Record rec;
+        while (inPipe.Remove(&rec)) {
+            rec.Project(keepMe, numAttsOutput, numAttsInput);
+            outPipe.Insert(&rec);
+        }
+        outPipe.ShutDown();
     });
 }
 
