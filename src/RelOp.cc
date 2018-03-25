@@ -23,10 +23,8 @@ void SelectFile::Run(DBFile &inFile, Pipe &outPipe, CNF &selOp,
         ComparisonEngine comp;
         Record rec;
 		inFile.MoveFirst();
-        while (inFile.GetNext(rec)) {
-            if (comp.Compare(&rec, &literal, &selOp)) {
+        while (inFile.GetNext(rec,selOp,literal)) {
                 outPipe.Insert(&rec);
-            }
         }
         outPipe.ShutDown();
     });
