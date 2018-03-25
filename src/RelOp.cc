@@ -201,30 +201,35 @@ void *GroupBy::performGrouping(void *voidArgs) {
     int *groupAttrList = args->groupingAttributes->getAttributes();
     std::copy(groupAttrList, groupAttrList + grpAttrCount, attsToKeep + 1);
     ComparisonEngine comp;
-    Pipe currentGroup(100);
-    Pipe groupSum(1);
+    Pipe *currentGroup = new Pipe(100);
+    Pipe *groupSum = new Pipe(1);
     Sum S;
     Record summedResult;
-    S.Run(currentGroup, groupSum, *(args->func));
+    S.Run(*currentGroup, *groupSum, *(args->func));
 
     while (groupedOutput.Remove(&currentRec)) {
         if (comp.Compare(&currentRec, &previousRec, args->groupingAttributes) ==
             0) {
-            currentGroup.Insert(&previousRec);
+            currentGroup->Insert(&previousRec);
         } else {
             Record prevRecCopy;
             prevRecCopy.Copy(&previousRec);
 
-            currentGroup.Insert(&previousRec);
-            Record sumRec;
+            currentGroup->Insert(&previousRec);
+            currentGroup->ShutDown();
             S.WaitUntilDone();
-            groupSum.Remove(&sumRec);
+            Record sumRec;
+            groupSum->Remove(&sumRec);
 
             // Merge the two records
             summedResult.MergeRecords(&sumRec, &prevRecCopy, 1, grpAttrCount,
                                       attsToKeep, 1 + grpAttrCount, 1);
             args->out->Insert(&summedResult);
-            S.Run(currentGroup, groupSum, *(args->func));
+            free(currentGroup);
+            free(groupSum);
+            currentGroup = new Pipe(100);
+            groupSum = new Pipe(1);
+            S.Run(*currentGroup, *groupSum, *(args->func));
         }
         previousRec.Consume(&currentRec);
     }
@@ -232,15 +237,18 @@ void *GroupBy::performGrouping(void *voidArgs) {
     Record prevRecCopy;
     prevRecCopy.Copy(&previousRec);
 
-    currentGroup.Insert(&previousRec);
-    Record sumRec;
+    currentGroup->Insert(&previousRec);
+    currentGroup->ShutDown();
     S.WaitUntilDone();
-    groupSum.Remove(&sumRec);
+    Record sumRec;
+    groupSum->Remove(&sumRec);
 
     // Merge the two records
     summedResult.MergeRecords(&sumRec, &prevRecCopy, 1, grpAttrCount,
                               attsToKeep, 1 + grpAttrCount, 1);
     args->out->Insert(&summedResult);
+    free(currentGroup);
+    free(groupSum);
     args->out->ShutDown();
     pthread_exit(NULL);
 }
