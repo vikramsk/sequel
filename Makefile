@@ -31,7 +31,7 @@ $(BUILD_DIR)/%.cc.o: %.cc
 	$(MKDIR_P) $(dir $@)
 	$(CC) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-all: main test.out testsuite
+all: main test.out test2.out testsuite
 
 main: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/main.o
 	$(CC) $(CXXFLAGS) $(OBJS) build/src/main.o  build/src/y.tab.o build/src/lex.yy.o -o build/$@
@@ -39,12 +39,18 @@ main: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/main.o
 test.out: $(OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o build/src/test.o dbfolder
 	$(CC) $(CXXFLAGS) $(OBJS) build/src/test.o build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o -o build/test.out  -ll
 
+test2.out: $(OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o build/src/test2.o dbfolder
+	$(CC) $(CXXFLAGS) $(OBJS) build/src/test2.o build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o -o build/test2.out  -ll
+
 build/src/main.o: src/main.cpp
 	$(CC) -g -c src/main.cpp -o $@
 	
 build/src/test.o: src/test.cpp
 	$(CC) -g -c src/test.cpp -o $@
 	
+build/src/test2.o: src/test2.cpp
+	$(CC) -g -c src/test2.cpp -o $@
+
 build/src/y.tab.o: src/Parser.y 
 	yacc -d src/Parser.y -o build/src/y.tab.c
 	$(shell $(tag))
