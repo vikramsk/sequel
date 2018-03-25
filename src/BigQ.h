@@ -16,6 +16,7 @@ class BigQ {
     pthread_t worker;
 
    private:
+    char *tempFileName;
     File runs;
     // runHeads records the page offsets for
     // each run in the file.

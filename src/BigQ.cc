@@ -143,7 +143,7 @@ off_t getNextRecord(Record *rec, vector<runTracker *> &rts, File &runs,
 }
 
 void BigQ::mergeRunsAndWrite(Pipe *out, OrderMaker *sortOrder) {
-    runs.Open(1, "build/dbfiles/tpmms_runs.bin");
+    runs.Open(1, tempFileName);
 
     vector<bool> runStatus;
     auto runTrackers = createRunTrackers(runs, runHeads, runStatus);
@@ -193,15 +193,14 @@ off_t appendRunToFile(vector<Record *> &singleRun, File &runs,
 }
 
 void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
+    std::string s = "build/dbfiles/tpmms_runs" + to_string(rand()%100) + ".bin";
+    tempFileName = new char[s.length()+1];
+    strcpy(tempFileName, s.c_str()); 
+    runs.Open(0, tempFileName);
+
     int pagesLeft = runlen;
     vector<Record *> singleRun;
     off_t currRunHead = 0;
-
-    // Initialize runs file
-    // TODO: Pull from config file
-    // char* runsFile = config->get_as<string>("dbfiles")+"tpmms_runs.bin";
-    runs.Open(0, "build/dbfiles/tpmms_runs.bin");
-
     Record rec;
     Page buffer;
     int appendResult = 0;
@@ -271,4 +270,4 @@ BigQ::BigQ(Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen) {
     pthread_attr_destroy(&attr);
 }
 
-BigQ::~BigQ() { remove("build/dbfiles/tpmms_runs.bin"); }
+BigQ::~BigQ() { remove(tempFileName); }
