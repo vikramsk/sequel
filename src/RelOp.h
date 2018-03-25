@@ -51,8 +51,8 @@ class Project : public RelationalOp {
 class Join : public RelationalOp {
    public:
     void Run(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe, CNF &selOp,
-             Record &literal);
-    void WaitUntilDone();
+             Record &literal) {}
+    void WaitUntilDone() {}
     void Use_n_Pages(int n) {}
 };
 
