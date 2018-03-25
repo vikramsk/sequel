@@ -75,6 +75,17 @@ class Project : public RelationalOp {
 };
 
 class Join : public RelationalOp {
+   private:
+    struct joinArgs {
+        Pipe &inL;
+        Pipe &inR;
+        Pipe &out;
+        CNF &cnf;
+        Record &literal;
+    };
+
+    static void *joinWorker(void *args);
+
    public:
     void Run(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe, CNF &selOp,
              Record &literal);

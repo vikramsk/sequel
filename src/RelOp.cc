@@ -1,5 +1,4 @@
 #include "RelOp.h"
-#include <future>
 #include <thread>
 
 void performSelectPipe(Pipe &inPipe, Pipe &outPipe, CNF &selOp,
