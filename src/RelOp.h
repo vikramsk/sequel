@@ -78,13 +78,24 @@ class Sum : public RelationalOp {
 	public:
 	void Run (Pipe &inPipe, Pipe &outPipe, Function &computeMe);
 	void WaitUntilDone ();
+	// TODO: Check how to use a buffer for computing sum
 	void Use_n_Pages (int n) { }
 };
 class GroupBy : public RelationalOp {
+	
+	private:
+	pthread_t thread;
+	Pipe *in;
+	Pipe *out;
+	OrderMaker *groupingAttributes;
+	Function *func;
+
+	static void *performGrouping(void *voidArgs);
+	
 	public:
-	void Run (Pipe &inPipe, Pipe &outPipe, OrderMaker &groupAtts, Function &computeMe) { }
-	void WaitUntilDone () { }
-	void Use_n_Pages (int n) { }
+	void Run (Pipe &inPipe, Pipe &outPipe, OrderMaker &groupAtts, Function &computeMe);
+	void WaitUntilDone ();
+	void Use_n_Pages (int n) {}
 };
 class WriteOut : public RelationalOp {
 	

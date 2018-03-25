@@ -75,6 +75,12 @@ class OrderMaker {
     // based upon ALL of their attributes
     OrderMaker(Schema *schema);
 
+    // returns the number of attributes
+    int getNumAttributes();
+
+    // gets the list of attributes in the OrderMaker instance
+    int *getAttributes();
+
     // print to the screen
     void Print();
 };
