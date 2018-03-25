@@ -58,7 +58,7 @@ class Join : public RelationalOp {
 
 class DuplicateRemoval : public RelationalOp {
    private:
-    // pthread_t thread;
+    pthread_t thread;
     Pipe *in;
     Pipe *out;
     Schema *schema;
@@ -72,21 +72,15 @@ class DuplicateRemoval : public RelationalOp {
 };
 
 class Sum : public RelationalOp {
-   private:
-    // pthread_t thread;
-    Pipe *in;
-    Pipe *out;
-    Function *func;
 
-	private:
-	pthread_t thread;
+   private:
 	Pipe *in;
 	Pipe *out;
 	Function *func;
 	
 	static void *computeSum(void *voidArgs);
 
-	public:
+   public:
 	void Run (Pipe &inPipe, Pipe &outPipe, Function &computeMe);
 	void WaitUntilDone ();
 	// TODO: Check how to use a buffer for computing sum
@@ -95,8 +89,7 @@ class Sum : public RelationalOp {
 
 class GroupBy : public RelationalOp {
 	
-	private:
-	pthread_t thread;
+   private:
 	Pipe *in;
 	Pipe *out;
 	OrderMaker *groupingAttributes;
@@ -104,15 +97,15 @@ class GroupBy : public RelationalOp {
 
 	static void *performGrouping(void *voidArgs);
 	
-	public:
+   public:
 	void Run (Pipe &inPipe, Pipe &outPipe, OrderMaker &groupAtts, Function &computeMe);
 	void WaitUntilDone ();
 	void Use_n_Pages (int n) {}
 };
 
 class WriteOut : public RelationalOp {
+    
    private:
-    // pthread_t thread;
     std::string buffer;
     Pipe *in;
     FILE *outputFile;
