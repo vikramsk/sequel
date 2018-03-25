@@ -2,81 +2,127 @@
 #include <future>
 #include <thread>
 
-void SelectPipe::Run(Pipe &inPipe, Pipe &outPipe, CNF &selOp, Record &literal) {
-    worker = std::async([&, this] {
-        ComparisonEngine comp;
-        Record rec;
-        while (inPipe.Remove(&rec)) {
-            if (comp.Compare(&rec, &literal, &selOp)) {
-                outPipe.Insert(&rec);
-            }
+void performSelectPipe(Pipe &inPipe, Pipe &outPipe, CNF &selOp,
+                       Record &literal) {
+    ComparisonEngine comp;
+    Record rec;
+    while (inPipe.Remove(&rec)) {
+        if (comp.Compare(&rec, &literal, &selOp)) {
+            outPipe.Insert(&rec);
         }
-        outPipe.ShutDown();
-    });
+    }
+    outPipe.ShutDown();
 }
 
-void SelectPipe::WaitUntilDone() { worker.wait(); }
+void *SelectPipe::selectPipeWorker(void *voidArgs) {
+    selectArgs *args = (selectArgs *)voidArgs;
+    performSelectPipe(args->in, args->out, args->cnf, args->literal);
+    pthread_exit(NULL);
+}
+
+void SelectPipe::Run(Pipe &inPipe, Pipe &outPipe, CNF &selOp, Record &literal) {
+    selectArgs *sArgs = new selectArgs{inPipe, outPipe, selOp, literal};
+
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_create(&thread, NULL, &SelectPipe::selectPipeWorker, (void *)sArgs);
+    pthread_attr_destroy(&attr);
+}
+
+void SelectPipe::WaitUntilDone() { pthread_join(thread, NULL); }
+
+void performSelectFile(DBFile &inFile, Pipe &outPipe, CNF &selOp,
+                       Record &literal) {
+    Record rec;
+    inFile.MoveFirst();
+    while (inFile.GetNext(rec, selOp, literal)) {
+        outPipe.Insert(&rec);
+    }
+    outPipe.ShutDown();
+}
+
+void *SelectFile::selectFileWorker(void *voidArgs) {
+    selectArgs *args = (selectArgs *)voidArgs;
+    performSelectFile(args->inFile, args->out, args->cnf, args->literal);
+    pthread_exit(NULL);
+}
 
 void SelectFile::Run(DBFile &inFile, Pipe &outPipe, CNF &selOp,
                      Record &literal) {
-    worker = std::async(std::launch::async, [&, this] {
-        ComparisonEngine comp;
-        Record rec;
-		inFile.MoveFirst();
-        while (inFile.GetNext(rec,selOp,literal)) {
-                outPipe.Insert(&rec);
-        }
-        outPipe.ShutDown();
-    });
+    selectArgs *sArgs = new selectArgs{inFile, outPipe, selOp, literal};
+
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_create(&thread, NULL, &SelectFile::selectFileWorker, (void *)sArgs);
+    pthread_attr_destroy(&attr);
 }
 
-void SelectFile::WaitUntilDone() { worker.wait(); }
+void SelectFile::WaitUntilDone() { pthread_join(thread, NULL); }
+
+void performProject(Pipe &inPipe, Pipe &outPipe, int *keepMe, int numAttsInput,
+                    int numAttsOutput) {
+    Record rec;
+    while (inPipe.Remove(&rec)) {
+        rec.Project(keepMe, numAttsOutput, numAttsInput);
+        outPipe.Insert(&rec);
+    }
+    outPipe.ShutDown();
+}
+
+void *Project::projectWorker(void *voidArgs) {
+    projectArgs *args = (projectArgs *)voidArgs;
+    performProject(args->in, args->out, args->keepMe, args->numAttsInput,
+                   args->numAttsOutput);
+    pthread_exit(NULL);
+}
 
 void Project::Run(Pipe &inPipe, Pipe &outPipe, int *keepMe, int numAttsInput,
                   int numAttsOutput) {
-    worker = std::async(std::launch::async, [&, this] {
-        Record rec;
-        while (inPipe.Remove(&rec)) {
-            rec.Project(keepMe, numAttsOutput, numAttsInput);
-            outPipe.Insert(&rec);
-        }
-        outPipe.ShutDown();
-    });
+    projectArgs *pArgs =
+        new projectArgs{inPipe, outPipe, keepMe, numAttsInput, numAttsOutput};
+
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_create(&thread, NULL, &Project::projectWorker, (void *)pArgs);
+    pthread_attr_destroy(&attr);
 }
 
-void Project::WaitUntilDone() { worker.wait(); }
+void Project::WaitUntilDone() { pthread_join(thread, NULL); }
 
 void *DuplicateRemoval::bigQDuplicateRemoval(void *voidArgs) {
-	DuplicateRemoval *args = (DuplicateRemoval *)voidArgs;
-	Pipe sortedOutput(100); //this buffer size is based on the test input
-	OrderMaker om(args->schema);
-	BigQ bigQInstance(*(args->in), sortedOutput, om, 1);
-	// TODO: make sure that the input pipe is shutdown in its predecessor 
-	
-	Record currentRec;
-	Record previousRec;
-	if(sortedOutput.Remove(&currentRec)) {
-		previousRec.Consume(&currentRec);
-	}
-	
-	ComparisonEngine comp;
-	while (sortedOutput.Remove(&currentRec)) {
-		//Compare current record to previous
-		//If equal, skip current record
-		if(comp.Compare(&currentRec, &previousRec, &om) == 0) {
-			continue;
-		}
-		//Else write previous record to output and store current in previous
-		args->out->Insert(&previousRec);
-		previousRec.Consume(&currentRec);
-	}
-	
-	if(previousRec.bits) {
-		//write previous record to output
-		args->out->Insert(&previousRec);
-	}
-	args->out->ShutDown();
-	pthread_exit(NULL);
+    DuplicateRemoval *args = (DuplicateRemoval *)voidArgs;
+    Pipe sortedOutput(100);  // this buffer size is based on the test input
+    OrderMaker om(args->schema);
+    BigQ bigQInstance(*(args->in), sortedOutput, om, 1);
+    // TODO: make sure that the input pipe is shutdown in its predecessor
+
+    Record currentRec;
+    Record previousRec;
+    if (sortedOutput.Remove(&currentRec)) {
+        previousRec.Consume(&currentRec);
+    }
+
+    ComparisonEngine comp;
+    while (sortedOutput.Remove(&currentRec)) {
+        // Compare current record to previous
+        // If equal, skip current record
+        if (comp.Compare(&currentRec, &previousRec, &om) == 0) {
+            continue;
+        }
+        // Else write previous record to output and store current in previous
+        args->out->Insert(&previousRec);
+        previousRec.Consume(&currentRec);
+    }
+
+    if (previousRec.bits) {
+        // write previous record to output
+        args->out->Insert(&previousRec);
+    }
+    args->out->ShutDown();
+    pthread_exit(NULL);
 }
 
 void DuplicateRemoval::Run(Pipe &inPipe, Pipe &outPipe, Schema &mySchema) {
@@ -131,77 +177,82 @@ void Sum::Run(Pipe &inPipe, Pipe &outPipe, Function &computeMe) {
 void Sum::WaitUntilDone() { pthread_join(thread, NULL); }
 
 void *GroupBy::performGrouping(void *voidArgs) {
-	GroupBy *args = (GroupBy *)voidArgs;
-	// TODO: Determine how to fix buffer size
-	Pipe groupedOutput(100);
-	BigQ bigQInstance(*(args->in), groupedOutput, *(args->groupingAttributes), 1);
+    GroupBy *args = (GroupBy *)voidArgs;
+    // TODO: Determine how to fix buffer size
+    Pipe groupedOutput(100);
+    BigQ bigQInstance(*(args->in), groupedOutput, *(args->groupingAttributes),
+                      1);
 
-	Record currentRec;
-	Record previousRec;
-	if (groupedOutput.Remove(&currentRec)) {
-		previousRec.Consume(&currentRec);
-	}
-	
-	// if there are no records in the input pipe, return
-	if (!previousRec.bits) {
-		args->out->ShutDown();
-		pthread_exit(NULL);
-	}
+    Record currentRec;
+    Record previousRec;
+    if (groupedOutput.Remove(&currentRec)) {
+        previousRec.Consume(&currentRec);
+    }
 
-	int grpAttrCount = args->groupingAttributes->getNumAttributes();
-	int attsToKeep[1+grpAttrCount];
-	attsToKeep[0] = 0;
-	int *groupAttrList = args->groupingAttributes->getAttributes();
-	std::copy(groupAttrList, groupAttrList + grpAttrCount, attsToKeep + 1);
-	ComparisonEngine comp;
-	Pipe currentGroup(100);
-	Pipe groupSum(1);
-	Sum S;
-	Record summedResult;
-	S.Run(currentGroup,groupSum,*(args->func));
-		
-	while (groupedOutput.Remove(&currentRec)) {
-		if (comp.Compare(&currentRec, &previousRec, args->groupingAttributes) == 0) {
-			currentGroup.Insert(&previousRec);
-		} else {
-			Record prevRecCopy;
-			prevRecCopy.Copy(&previousRec);
-			
-			currentGroup.Insert(&previousRec);
-			Record sumRec;
-			S.WaitUntilDone();
-			groupSum.Remove(&sumRec);
-			
-			// Merge the two records
-			summedResult.MergeRecords (&sumRec, &prevRecCopy, 1, grpAttrCount, attsToKeep, 1+grpAttrCount, 1); 
-			args->out->Insert(&summedResult);
-			S.Run(currentGroup,groupSum,*(args->func));
-		}
-		previousRec.Consume(&currentRec);
-	}
-	
-	Record prevRecCopy;
-	prevRecCopy.Copy(&previousRec);
-			
-	currentGroup.Insert(&previousRec);
-	Record sumRec;
-	S.WaitUntilDone();
-	groupSum.Remove(&sumRec);
-			
-	// Merge the two records
-	summedResult.MergeRecords (&sumRec, &prevRecCopy, 1, grpAttrCount, attsToKeep, 1+grpAttrCount, 1); 
-	args->out->Insert(&summedResult);
-	args->out->ShutDown();
-	pthread_exit(NULL);
+    // if there are no records in the input pipe, return
+    if (!previousRec.bits) {
+        args->out->ShutDown();
+        pthread_exit(NULL);
+    }
+
+    int grpAttrCount = args->groupingAttributes->getNumAttributes();
+    int attsToKeep[1 + grpAttrCount];
+    attsToKeep[0] = 0;
+    int *groupAttrList = args->groupingAttributes->getAttributes();
+    std::copy(groupAttrList, groupAttrList + grpAttrCount, attsToKeep + 1);
+    ComparisonEngine comp;
+    Pipe currentGroup(100);
+    Pipe groupSum(1);
+    Sum S;
+    Record summedResult;
+    S.Run(currentGroup, groupSum, *(args->func));
+
+    while (groupedOutput.Remove(&currentRec)) {
+        if (comp.Compare(&currentRec, &previousRec, args->groupingAttributes) ==
+            0) {
+            currentGroup.Insert(&previousRec);
+        } else {
+            Record prevRecCopy;
+            prevRecCopy.Copy(&previousRec);
+
+            currentGroup.Insert(&previousRec);
+            Record sumRec;
+            S.WaitUntilDone();
+            groupSum.Remove(&sumRec);
+
+            // Merge the two records
+            summedResult.MergeRecords(&sumRec, &prevRecCopy, 1, grpAttrCount,
+                                      attsToKeep, 1 + grpAttrCount, 1);
+            args->out->Insert(&summedResult);
+            S.Run(currentGroup, groupSum, *(args->func));
+        }
+        previousRec.Consume(&currentRec);
+    }
+
+    Record prevRecCopy;
+    prevRecCopy.Copy(&previousRec);
+
+    currentGroup.Insert(&previousRec);
+    Record sumRec;
+    S.WaitUntilDone();
+    groupSum.Remove(&sumRec);
+
+    // Merge the two records
+    summedResult.MergeRecords(&sumRec, &prevRecCopy, 1, grpAttrCount,
+                              attsToKeep, 1 + grpAttrCount, 1);
+    args->out->Insert(&summedResult);
+    args->out->ShutDown();
+    pthread_exit(NULL);
 }
 
-void GroupBy::Run (Pipe &inPipe, Pipe &outPipe, OrderMaker &groupAtts, Function &computeMe) {
-	in = &inPipe;
-	out = &outPipe;
-	groupingAttributes = &groupAtts;
-	func = &computeMe;
-	
-	/* Initialize and set thread detached attribute */
+void GroupBy::Run(Pipe &inPipe, Pipe &outPipe, OrderMaker &groupAtts,
+                  Function &computeMe) {
+    in = &inPipe;
+    out = &outPipe;
+    groupingAttributes = &groupAtts;
+    func = &computeMe;
+
+    /* Initialize and set thread detached attribute */
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -209,9 +260,7 @@ void GroupBy::Run (Pipe &inPipe, Pipe &outPipe, OrderMaker &groupAtts, Function 
     pthread_attr_destroy(&attr);
 }
 
-void GroupBy::WaitUntilDone () { 
-	pthread_join (thread, NULL);
-}
+void GroupBy::WaitUntilDone() { pthread_join(thread, NULL); }
 
 void *WriteOut::writeTextFile(void *voidArgs) {
     WriteOut *args = (WriteOut *)voidArgs;
