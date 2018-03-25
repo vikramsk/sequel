@@ -19,7 +19,7 @@ void SelectPipe::WaitUntilDone() { worker.wait(); }
 
 void SelectFile::Run(DBFile &inFile, Pipe &outPipe, CNF &selOp,
                      Record &literal) {
-    worker = std::async([&, this] {
+    worker = std::async(std::launch::async, [&, this] {
         ComparisonEngine comp;
         Record rec;
         while (inFile.GetNext(rec)) {
@@ -35,7 +35,7 @@ void SelectFile::WaitUntilDone() { worker.wait(); }
 
 void Project::Run(Pipe &inPipe, Pipe &outPipe, int *keepMe, int numAttsInput,
                   int numAttsOutput) {
-    worker = std::async([&, this] {
+    worker = std::async(std::launch::async, [&, this] {
         Record rec;
         while (inPipe.Remove(&rec)) {
             rec.Project(keepMe, numAttsOutput, numAttsInput);
