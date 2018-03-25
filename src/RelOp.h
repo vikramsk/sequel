@@ -58,7 +58,6 @@ class Join : public RelationalOp {
 
 class DuplicateRemoval : public RelationalOp {
    private:
-    pthread_t thread;
     Pipe *in;
     Pipe *out;
     Schema *schema;
