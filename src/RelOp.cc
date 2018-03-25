@@ -22,6 +22,7 @@ void SelectFile::Run(DBFile &inFile, Pipe &outPipe, CNF &selOp,
     worker = std::async(std::launch::async, [&, this] {
         ComparisonEngine comp;
         Record rec;
+		inFile.MoveFirst();
         while (inFile.GetNext(rec)) {
             if (comp.Compare(&rec, &literal, &selOp)) {
                 outPipe.Insert(&rec);
