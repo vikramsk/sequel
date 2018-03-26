@@ -54,6 +54,7 @@ fType readFileType(char *filePath) {
 }
 
 int DBFile::Create(const char *f_path, fType f_type, void *startup) {
+    filePath = strdup(f_path);
     if (f_type == heap) {
         dbInstance = new HeapDBFile();
     } else if (f_type == sorted) {
@@ -88,6 +89,11 @@ int DBFile::Open(const char *f_path) {
 void DBFile::MoveFirst() { return dbInstance->MoveFirst(); }
 
 int DBFile::Close() { return dbInstance->Close(); }
+
+int DBFile::Delete() {
+    dbInstance->Close();
+    remove(filePath);
+}
 
 void DBFile::Add(Record &rec) { dbInstance->Add(rec); }
 

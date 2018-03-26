@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 #include "RelOp.h"
 
@@ -55,8 +56,7 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
     if (!sortedR.Remove(&recRight)) {
         recRight.bits = NULL;
     };
-
-    remove(fileName);
+    file.Delete();
 }
 
 void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,

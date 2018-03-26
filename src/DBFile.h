@@ -99,6 +99,7 @@ class DBFile {
    private:
     GenericDBFile *dbInstance;
     GenericDBFile *getInstance(const char *f_path);
+    char *filePath;
 
    public:
     DBFile();
@@ -107,7 +108,7 @@ class DBFile {
     int Create(const char *fpath, fType file_type, void *startup);
     int Open(const char *fpath);
     int Close();
-
+    int Delete();
     void Load(Schema &myschema, const char *loadpath);
 
     void MoveFirst();
