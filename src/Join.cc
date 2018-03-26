@@ -3,6 +3,61 @@
 
 void Join::WaitUntilDone() { pthread_join(thread, NULL); }
 
+void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
+                       Pipe &sortedR, Pipe &outPipe, OrderMaker &orderL,
+                       OrderMaker &orderR) {
+    Record result;
+    ComparisonEngine comp;
+    int nl = recLeft.NumAtts();
+    int nr = recRight.NumAtts();
+    int attsToKeep[nl + nr];
+    for (int i = 0; i < nl; i++) {
+        attsToKeep[i] = i;
+    }
+    for (int i = 0; i < nr; i++) {
+        attsToKeep[i + nl] = i;
+    }
+
+    std::string filePath =
+        "build/dbfiles/rec_manager_" + to_string(rand() % 10000) + ".bin";
+    char *fileName = new char[filePath.length() + 1];
+    strcpy(fileName, filePath.c_str());
+
+    DBFile file;
+    file.Create(fileName, heap, NULL);
+
+    // write all matches to temp file.
+    while (!comp.Compare(&recLeft, &orderL, &recRight, &orderR)) {
+        file.Add(recRight);
+        if (!sortedR.Remove(&recRight)) {
+            recRight.bits = NULL;
+            break;
+        }
+    }
+
+    while (recLeft.bits) {
+        file.MoveFirst();
+        file.GetNext(recRight);
+        int compResult = comp.Compare(&recLeft, &orderL, &recRight, &orderR);
+        if (compResult != 0) {
+            break;
+        }
+        do {
+            result.MergeRecords(&recLeft, &recRight, nl, nr, attsToKeep,
+                                nl + nr, nl);
+            outPipe.Insert(&result);
+        } while (file.GetNext(recRight));
+
+        if (!sortedL.Remove(&recLeft)) {
+            recLeft.bits = NULL;
+        };
+    }
+
+    if (!sortedR.Remove(&recRight)) {
+        recRight.bits = NULL;
+    };
+}
+
 void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
                    OrderMaker &orderL, OrderMaker &orderR) {
     Pipe sortedL(100), sortedR(100);
@@ -12,7 +67,6 @@ void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
     ComparisonEngine comp;
     Record recLeft;
     Record recRight;
-    Record result;
 
     sortedL.Remove(&recLeft);
     sortedR.Remove(&recRight);
@@ -20,26 +74,8 @@ void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
     while (recLeft.bits && recRight.bits) {
         int compResult = comp.Compare(&recLeft, &orderL, &recRight, &orderR);
         if (compResult == 0) {
-            int nl = recLeft.NumAtts();
-            int nr = recRight.NumAtts();
-            int attsToKeep[nl + nr];
-
-            for (int i = 0; i < nl; i++) {
-                attsToKeep[i] = i;
-            }
-            for (int i = 0; i < nr; i++) {
-                attsToKeep[i + nl] = i;
-            }
-
-            result.MergeRecords(&recLeft, &recRight, nl, nr, attsToKeep,
-                                nl + nr, nl);
-            outPipe.Insert(&result);
-            if (!sortedL.Remove(&recLeft)) {
-                recLeft.bits = NULL;
-            };
-            if (!sortedR.Remove(&recRight)) {
-                recRight.bits = NULL;
-            }
+            mergeEqualRecords(recLeft, recRight, inPipeL, inPipeR, outPipe,
+                              orderL, orderR);
 
         } else if (compResult < 0) {
             if (!sortedL.Remove(&recLeft)) {
