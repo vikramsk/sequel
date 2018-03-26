@@ -20,7 +20,7 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
         attsToKeep[i + nl] = i;
     }
 
-    RecordBufferManager buff;
+    RecordBufferManager buff(false);
 
     // write all matches to temp file.
     while (comp.Compare(&recLeft, &orderL, &recRight, &orderR) == 0) {
@@ -94,7 +94,58 @@ void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
 }
 
 void blockNestedLoopJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
-                         CNF &selOp, Record &literal) {}
+                         CNF &selOp, Record &literal) {
+    RecordBufferManager relLeft(true);
+    RecordBufferManager relRight(false);
+
+    Record recLeft;
+    Record recRight;
+    Record recResult;
+
+    if (!inPipeL.Remove(&recLeft)) {
+        return;
+    }
+    if (!inPipeR.Remove(&recRight)) {
+        return;
+    }
+    relLeft.AddRecord(recLeft);
+    relRight.AddRecord(recRight);
+    int nl = recLeft.NumAtts();
+    int nr = recRight.NumAtts();
+    int attsToKeep[nl + nr];
+    for (int i = 0; i < nl; i++) {
+        attsToKeep[i] = i;
+    }
+    for (int i = 0; i < nr; i++) {
+        attsToKeep[i + nl] = i;
+    }
+
+    ComparisonEngine comp;
+    while (inPipeR.Remove(&recRight)) {
+        relRight.AddRecord(recRight);
+    }
+
+    int compResult;
+    while (relLeft.AddRecordBlock(inPipeL)) {
+        relLeft.MoveFirst();
+
+        while (relLeft.GetNextInBlock(recLeft)) {
+            relRight.MoveFirst();
+
+            // while there are records in the current block in S.
+            while (relRight.GetNextInBlock(recRight)) {
+                compResult =
+                    comp.Compare(&recLeft, &recRight, &literal, &selOp);
+                if (!compResult) continue;
+                recResult.MergeRecords(&recLeft, &recRight, nl, nr, attsToKeep,
+                                       nl + nr, nl);
+                outPipe.Insert(&recResult);
+            }
+            // the current block is the last block in S.
+            if (!relRight.GetNext(recRight)) break;
+        }
+    }
+}
 
 void performJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe, CNF &selOp,
                  Record &literal) {

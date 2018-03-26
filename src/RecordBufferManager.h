@@ -1,5 +1,6 @@
 #include <vector>
 #include "File.h"
+#include "Pipe.h"
 #include "Record.h"
 
 class RecordBufferManager {
@@ -7,20 +8,22 @@ class RecordBufferManager {
     File file;
     char *filePath;
     Page buffer;
+    bool singlePage;
     off_t pageIndex;
     vector<Record *> currentPage;
     size_t currentPageRecordIndex;
-    vector<Record *>::iterator currPageIt;
 
     void flushBuffer();
-    void bufferAppend(Record *rec);
+    bool bufferAppend(Record *rec);
     void close();
     void loadRecordsInBuffer();
 
    public:
-    RecordBufferManager();
+    RecordBufferManager(bool singlePage);
     ~RecordBufferManager();
     bool AddRecord(Record &rec);
+    bool AddRecordBlock(Pipe &pipe);
     void MoveFirst();
     bool GetNext(Record &rec);
+    bool GetNextInBlock(Record &rec);
 };
