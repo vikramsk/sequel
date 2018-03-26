@@ -1,5 +1,6 @@
 #include <cstring>
 #include <iostream>
+#include "RecordBufferManager.h"
 #include "RelOp.h"
 
 void Join::WaitUntilDone() { pthread_join(thread, NULL); }
@@ -19,26 +20,26 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
         attsToKeep[i + nl] = i;
     }
 
-    std::string filePath =
-        "build/dbfiles/rec_manager_" + to_string(rand() % 10000) + ".bin";
-    char *fileName = new char[filePath.length() + 1];
-    strcpy(fileName, filePath.c_str());
+    // std::string filePath =
+    //    "build/dbfiles/rec_manager_" + to_string(rand() % 10000) + ".bin";
+    // char *fileName = new char[filePath.length() + 1];
+    // strcpy(fileName, filePath.c_str());
 
-    DBFile file;
-    file.Create(fileName, heap, NULL);
+    // DBFile file;
+    // file.Create(fileName, heap, NULL);
+    RecordBufferManager buff;
 
     // write all matches to temp file.
     while (comp.Compare(&recLeft, &orderL, &recRight, &orderR) == 0) {
-        file.Add(recRight);
+        buff.AddRecord(recRight);
         if (!sortedR.Remove(&recRight)) {
             recRight.bits = NULL;
             break;
         }
     }
-
     while (recLeft.bits) {
-        file.MoveFirst();
-        file.GetNext(recRight);
+        buff.MoveFirst();
+        buff.GetNext(recRight);
         int compResult = comp.Compare(&recLeft, &orderL, &recRight, &orderR);
         if (compResult != 0) {
             break;
@@ -47,7 +48,7 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
             result.MergeRecords(&recLeft, &recRight, nl, nr, attsToKeep,
                                 nl + nr, nl);
             outPipe.Insert(&result);
-        } while (file.GetNext(recRight));
+        } while (buff.GetNext(recRight));
 
         if (!sortedL.Remove(&recLeft)) {
             recLeft.bits = NULL;
@@ -56,7 +57,7 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
     if (!sortedR.Remove(&recRight)) {
         recRight.bits = NULL;
     };
-    file.Delete();
+    // file.Delete();
 }
 
 void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
