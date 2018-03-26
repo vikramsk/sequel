@@ -51,6 +51,17 @@ void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
             }
         }
     }
+    while (recLeft.bits) {
+        if (!sortedL.Remove(&recLeft)) {
+            recLeft.bits = NULL;
+        };
+    }
+    while (recRight.bits) {
+        if (!sortedR.Remove(&recRight)) {
+            recRight.bits = NULL;
+        }
+    }
+
     outPipe.ShutDown();
 }
 
