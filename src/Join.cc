@@ -20,13 +20,6 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
         attsToKeep[i + nl] = i;
     }
 
-    // std::string filePath =
-    //    "build/dbfiles/rec_manager_" + to_string(rand() % 10000) + ".bin";
-    // char *fileName = new char[filePath.length() + 1];
-    // strcpy(fileName, filePath.c_str());
-
-    // DBFile file;
-    // file.Create(fileName, heap, NULL);
     RecordBufferManager buff;
 
     // write all matches to temp file.
@@ -37,27 +30,25 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
             break;
         }
     }
+    Record rightIterator;
     while (recLeft.bits) {
         buff.MoveFirst();
-        buff.GetNext(recRight);
-        int compResult = comp.Compare(&recLeft, &orderL, &recRight, &orderR);
+        buff.GetNext(rightIterator);
+        int compResult =
+            comp.Compare(&recLeft, &orderL, &rightIterator, &orderR);
         if (compResult != 0) {
             break;
         }
         do {
-            result.MergeRecords(&recLeft, &recRight, nl, nr, attsToKeep,
+            result.MergeRecords(&recLeft, &rightIterator, nl, nr, attsToKeep,
                                 nl + nr, nl);
             outPipe.Insert(&result);
-        } while (buff.GetNext(recRight));
+        } while (buff.GetNext(rightIterator));
 
         if (!sortedL.Remove(&recLeft)) {
             recLeft.bits = NULL;
         };
     }
-    if (!sortedR.Remove(&recRight)) {
-        recRight.bits = NULL;
-    };
-    // file.Delete();
 }
 
 void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
