@@ -80,6 +80,7 @@ void DBFile::Load(Schema &f_schema, const char *loadpath) {
 }
 
 int DBFile::Open(const char *f_path) {
+    filePath = strdup(f_path);
     if (dbInstance == NULL) {
         dbInstance = getInstance(f_path);
     }
