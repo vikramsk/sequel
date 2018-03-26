@@ -93,6 +93,7 @@ int DBFile::Close() { return dbInstance->Close(); }
 int DBFile::Delete() {
     dbInstance->Close();
     remove(filePath);
+    remove(getMetaFilePath(filePath));
 }
 
 void DBFile::Add(Record &rec) { dbInstance->Add(rec); }
