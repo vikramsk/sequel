@@ -1,4 +1,5 @@
 #include "RecordBufferManager.h"
+#include <cstring>
 #include <iostream>
 
 RecordBufferManager::RecordBufferManager() {
