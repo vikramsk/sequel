@@ -27,7 +27,7 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
     file.Create(fileName, heap, NULL);
 
     // write all matches to temp file.
-    while (!comp.Compare(&recLeft, &orderL, &recRight, &orderR)) {
+    while (comp.Compare(&recLeft, &orderL, &recRight, &orderR) == 0) {
         file.Add(recRight);
         if (!sortedR.Remove(&recRight)) {
             recRight.bits = NULL;
@@ -52,10 +52,11 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
             recLeft.bits = NULL;
         };
     }
-
     if (!sortedR.Remove(&recRight)) {
         recRight.bits = NULL;
     };
+
+    remove(fileName);
 }
 
 void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
@@ -74,9 +75,8 @@ void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
     while (recLeft.bits && recRight.bits) {
         int compResult = comp.Compare(&recLeft, &orderL, &recRight, &orderR);
         if (compResult == 0) {
-            mergeEqualRecords(recLeft, recRight, inPipeL, inPipeR, outPipe,
+            mergeEqualRecords(recLeft, recRight, sortedL, sortedR, outPipe,
                               orderL, orderR);
-
         } else if (compResult < 0) {
             if (!sortedL.Remove(&recLeft)) {
                 recLeft.bits = NULL;
