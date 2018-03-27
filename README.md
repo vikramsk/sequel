@@ -21,7 +21,7 @@ The repository consists of the following:
  
  - Enter the root directory and run:
 	 `make all`
- - This will create a build directory in the root folder along with the executables.
+   This will create a build directory in the root folder along with the executables.
  - To run console driven tests for assignment 3 (relational operations), execute:
 	 `./build/test.out`
  - To run console driven tests for assignment 2 (sorted file implementation), execute: 
