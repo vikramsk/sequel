@@ -20,7 +20,7 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
         attsToKeep[i + nl] = i;
     }
 
-    RecordBufferManager buff(false);
+    RecordBufferManager buff;
 
     // write all matches to temp file.
     while (comp.Compare(&recLeft, &orderL, &recRight, &orderR) == 0) {
@@ -94,11 +94,20 @@ void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
 }
 
 void blockNestedLoopJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
-                         CNF &selOp, Record &literal) {
-    RecordBufferManager relLeft(true);
-    RecordBufferManager relRight(false);
+                         CNF &selOp, Record &literal, Record &recLeft) {
+    std::string fileName =
+        "build/dbfiles/rec_manager_" + to_string(rand() % 10000) + ".bin";
+    char *filePath = new char[fileName.length() + 1];
+    strcpy(filePath, fileName.c_str());
+    DBFile dbfile, leftFile;
+    dbfile.Create(filePath, heap, NULL);
 
-    Record recLeft;
+    fileName =
+        "build/dbfiles/rec_manager_" + to_string(rand() % 10000) + ".bin";
+    filePath = new char[fileName.length() + 1];
+    strcpy(filePath, fileName.c_str());
+    leftFile.Create(filePath, heap, NULL);
+
     Record recRight;
     Record recResult;
 
@@ -108,8 +117,6 @@ void blockNestedLoopJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
     if (!inPipeR.Remove(&recRight)) {
         return;
     }
-    relLeft.AddRecord(recLeft);
-    relRight.AddRecord(recRight);
     int nl = recLeft.NumAtts();
     int nr = recRight.NumAtts();
     int attsToKeep[nl + nr];
@@ -120,40 +127,41 @@ void blockNestedLoopJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
         attsToKeep[i + nl] = i;
     }
 
-    ComparisonEngine comp;
+    leftFile.Add(recLeft);
+    dbfile.Add(recRight);
     while (inPipeR.Remove(&recRight)) {
-        relRight.AddRecord(recRight);
+        dbfile.Add(recRight);
     }
 
+    while (inPipeL.Remove(&recLeft)) {
+        leftFile.Add(recLeft);
+    }
+
+    ComparisonEngine comp;
     int compResult;
-    while (relLeft.AddRecordBlock(inPipeL)) {
-        relLeft.MoveFirst();
-
-        while (relLeft.GetNextInBlock(recLeft)) {
-            relRight.MoveFirst();
-
-            // while there are records in the current block in S.
-            while (relRight.GetNextInBlock(recRight)) {
-                compResult =
-                    comp.Compare(&recLeft, &recRight, &literal, &selOp);
-                if (!compResult) continue;
-                recResult.MergeRecords(&recLeft, &recRight, nl, nr, attsToKeep,
-                                       nl + nr, nl);
-                outPipe.Insert(&recResult);
-            }
-            // the current block is the last block in S.
-            if (!relRight.GetNext(recRight)) break;
+    leftFile.MoveFirst();
+    while (leftFile.GetNext(recLeft)) {
+        dbfile.MoveFirst();
+        while (dbfile.GetNext(recRight)) {
+            compResult = comp.Compare(&recLeft, &recRight, &literal, &selOp);
+            if (!compResult) continue;
+            recResult.MergeRecords(&recLeft, &recRight, nl, nr, attsToKeep,
+                                   nl + nr, nl);
+            outPipe.Insert(&recResult);
         }
     }
+    remove(filePath);
+    outPipe.ShutDown();
 }
 
 void performJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe, CNF &selOp,
                  Record &literal) {
     OrderMaker orderLeft, orderRight;
+    Record rec;
     if (selOp.GetSortOrders(orderLeft, orderRight)) {
         mergeSortJoin(inPipeL, inPipeR, outPipe, orderLeft, orderRight);
     } else {
-        blockNestedLoopJoin(inPipeL, inPipeR, outPipe, selOp, literal);
+        blockNestedLoopJoin(inPipeL, inPipeR, outPipe, selOp, literal, rec);
     }
     outPipe.ShutDown();
 }

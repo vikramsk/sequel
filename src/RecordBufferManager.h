@@ -9,17 +9,18 @@ class RecordBufferManager {
     char *filePath;
     Page buffer;
     bool singlePage;
+    bool bufferFlushed;
     off_t pageIndex;
     vector<Record *> currentPage;
     size_t currentPageRecordIndex;
 
     void flushBuffer();
-    bool bufferAppend(Record *rec);
+    void bufferAppend(Record *rec);
     void close();
     void loadRecordsInBuffer();
 
    public:
-    RecordBufferManager(bool singlePage);
+    RecordBufferManager();
     ~RecordBufferManager();
     bool AddRecord(Record &rec);
     bool AddRecordBlock(Pipe &pipe);
