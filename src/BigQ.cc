@@ -193,7 +193,7 @@ off_t appendRunToFile(vector<Record *> &singleRun, File &runs,
 }
 
 void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
-    std::string s = "build/dbfiles/tpmms_runs" + to_string(rand()%100) + ".bin";
+    std::string s = "build/dbfiles/tpmms_runs" + to_string(rand()%100000) + ".bin";
     tempFileName = new char[s.length()+1];
     strcpy(tempFileName, s.c_str()); 
     runs.Open(0, tempFileName);
