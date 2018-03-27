@@ -12,11 +12,13 @@ The repository consists of the following:
  
 # Build instructions
  - Define the file paths for the tpch folder and the catalog directory in `config.toml`.
+ 
 	```
 	data = "data/10M/" --> The first line gives the location where tpch tables can be found
 	dbfiles = "build/dbfiles/" --> The second line tells where to store created dbfiles
 	catalog = "data/catalog" --> The third line describes the catalog location
  	```
+ 
  - Enter the root directory and run:
 	 `make all`
  - This will create a build directory in the root folder along with the executables.
