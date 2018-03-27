@@ -353,30 +353,30 @@ TEST(HeapFileTest, GetNextFromEmptyFile) {
 //     cleanup();
 // }
 
-TEST(SortedFileTest, CompareSortedLists) {
-    setup("data/catalog", "build/tests/", "data/10M/");
-    relation *rel_ptr = ps;
-    OrderMaker om;
-    rel_ptr->get_sort_order(om);
+// TEST(SortedFileTest, CompareSortedLists) {
+//     setup("data/catalog", "build/tests/", "data/10M/");
+//     relation *rel_ptr = ps;
+//     OrderMaker om;
+//     rel_ptr->get_sort_order(om);
     
-    DBFile dbfile1;
-    DBFile dbfile2;
-    dbfile1.Open("build/dbfiles/partsupp1.bin");
-    dbfile2.Open("build/dbfiles/partsupp2.bin");
-    dbfile1.MoveFirst();
-    dbfile2.MoveFirst();
+//     DBFile dbfile1;
+//     DBFile dbfile2;
+//     dbfile1.Open("build/dbfiles/partsupp1.bin");
+//     dbfile2.Open("build/dbfiles/partsupp2.bin");
+//     dbfile1.MoveFirst();
+//     dbfile2.MoveFirst();
 
-    ComparisonEngine comp;
-    Record rec1,rec2;
-    int cnt = 0;
-    while (dbfile1.GetNext(rec1) && dbfile2.GetNext(rec2)) {
-        if(comp.Compare(&rec1,&rec2,&om) == 0) {
-            cnt++;
-        }
-    }
-    cout << "\n query returned " << cnt
-         << " recs\n";
-    dbfile1.Close();
-    dbfile2.Close();
-    cleanup();
-}
+//     ComparisonEngine comp;
+//     Record rec1,rec2;
+//     int cnt = 0;
+//     while (dbfile1.GetNext(rec1) && dbfile2.GetNext(rec2)) {
+//         if(comp.Compare(&rec1,&rec2,&om) == 0) {
+//             cnt++;
+//         }
+//     }
+//     cout << "\n query returned " << cnt
+//          << " recs\n";
+//     dbfile1.Close();
+//     dbfile2.Close();
+//     cleanup();
+// }
