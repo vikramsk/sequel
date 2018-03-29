@@ -1,4 +1,5 @@
-CC = g++ -std=c++1z -Iinclude -Isrc -O2 -Wno-deprecated 
+CC = g++ -std=c++1z -Iinclude -Isrc -O2 -w 
+#-Wno-deprecated 
 
 debug: CC += -DDEBUG -g
 debug: main
@@ -60,26 +61,26 @@ build/src/test2.o: src/test2.cpp
 build/src/y.tab.o: src/Parser.y 
 	yacc -d src/Parser.y -o build/src/y.tab.c
 	$(shell $(tag))
-	g++ -c -Isrc/ build/src/y.tab.c 
+	$(CC) -c -Isrc/ build/src/y.tab.c 
 	mv y.tab.o build/src/
 
 build/src/yyfunc.tab.o: src/ParserFunc.y
 	yacc -p "yyfunc" -b "yyfunc" -d src/ParserFunc.y -o build/src/yyfunc.tab.c
 	$(shell $(tag1))
 	#sed $(tag) yyfunc.tab.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" 
-	g++ -c -Isrc/ build/src/yyfunc.tab.c
+	$(CC) -c -Isrc/ build/src/yyfunc.tab.c
 	mv yyfunc.tab.o build/src/
 
 build/src/lex.yyfunc.o: src/LexerFunc.l
 	lex -Pyyfunc src/LexerFunc.l
 	mv lex.yyfunc.c build/src/
-	gcc -c -Isrc/ build/src/lex.yyfunc.c
+	gcc -w -c -Isrc/ build/src/lex.yyfunc.c
 	mv lex.yyfunc.o build/src/
 
 build/src/lex.yy.o: src/Lexer.l
 	lex  src/Lexer.l 
 	mv lex.yy.c build/src/
-	gcc  -c -Isrc/ build/src/lex.yy.c
+	gcc -w -c -Isrc/ build/src/lex.yy.c
 	mv lex.yy.o build/src/
 
 dbfolder: 
@@ -96,7 +97,8 @@ USER_DIR = tests
 CPPFLAGS += -isystem $(GTEST_DIR)/include
 
 # Flags passed to the C++ compiler.
-CXXFLAGS += -g -Wall -Wextra -pthread
+CXXFLAGS += -g 
+#-Wall -Wextra -pthread
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
