@@ -6,6 +6,7 @@
 class RecordBufferManager {
    private:
     File file;
+    enum { READ, WRITE } mode;
     char *filePath;
     Page buffer;
     bool singlePage;
@@ -15,16 +16,18 @@ class RecordBufferManager {
     size_t currentPageRecordIndex;
 
     void flushBuffer();
-    void bufferAppend(Record *rec);
+    bool bufferAppend(Record *rec, bool creatNewPage);
     void close();
     void loadRecordsInBuffer();
 
    public:
     RecordBufferManager();
     ~RecordBufferManager();
-    bool AddRecord(Record &rec);
+    bool AddRecord(Record *rec);
     bool AddRecordBlock(Pipe &pipe);
+    void ClearBuffer();
     void MoveFirst();
+    void MoveFirstInBlock();
     bool GetNext(Record &rec);
     bool GetNextInBlock(Record &rec);
 };
