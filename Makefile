@@ -1,4 +1,4 @@
-CC = g++ -std=c++1z -Iinclude -Isrc -O2 -w 
+CC = g++ -std=c++1z -Iinclude -Isrc -O2 -w -pthread
 #-Wno-deprecated 
 
 debug: CC += -DDEBUG -g
