@@ -32,7 +32,7 @@ $(BUILD_DIR)/%.cc.o: %.cc
 	$(MKDIR_P) $(dir $@)
 	$(CC) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-all: main test.out test1.out test2.out testsuite
+all: main test.out test1.out test2.out test3.out testsuite
 
 main: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/main.o
 	$(CC) $(CXXFLAGS) $(OBJS) build/src/main.o  build/src/y.tab.o build/src/lex.yy.o -o build/$@
@@ -46,11 +46,14 @@ test1.out: $(OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o b
 test2.out: $(OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o build/src/test2.o dbfolder
 	$(CC) $(CXXFLAGS) $(OBJS) build/src/test2.o build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o -o build/test2.out  -ll
 
+test3.out: $(OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o build/src/test3.o dbfolder
+	$(CC) $(CXXFLAGS) $(OBJS) build/src/test3.o build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o -o build/test3.out  -ll
+
 build/src/main.o: src/main.cpp
 	$(CC) -g -c src/main.cpp -o $@
 	
-build/src/test.o: src/test.cpp
-	$(CC) -g -c src/test.cpp -o $@
+build/src/test.o: build/src/y.tab.o src/test.cpp
+	$(CC) -Ibuild/src -g -c src/test.cpp -o $@
 	
 build/src/test1.o: src/test1.cpp
 	$(CC) -g -c src/test1.cpp -o $@
@@ -58,17 +61,20 @@ build/src/test1.o: src/test1.cpp
 build/src/test2.o: src/test2.cpp
 	$(CC) -g -c src/test2.cpp -o $@
 
+build/src/test3.o: src/test3.cpp
+	$(CC) -g -c src/test3.cpp -o $@
+
 build/src/y.tab.o: src/Parser.y 
 	yacc -d src/Parser.y -o build/src/y.tab.c
 	$(shell $(tag))
-	$(CC) -c -Isrc/ build/src/y.tab.c 
+	g++ -w -c -Isrc/ build/src/y.tab.c 
 	mv y.tab.o build/src/
 
 build/src/yyfunc.tab.o: src/ParserFunc.y
 	yacc -p "yyfunc" -b "yyfunc" -d src/ParserFunc.y -o build/src/yyfunc.tab.c
 	$(shell $(tag1))
 	#sed $(tag) yyfunc.tab.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" 
-	$(CC) -c -Isrc/ build/src/yyfunc.tab.c
+	g++ -w -c -Isrc/ build/src/yyfunc.tab.c
 	mv yyfunc.tab.o build/src/
 
 build/src/lex.yyfunc.o: src/LexerFunc.l
@@ -97,7 +103,7 @@ USER_DIR = tests
 CPPFLAGS += -isystem $(GTEST_DIR)/include
 
 # Flags passed to the C++ compiler.
-CXXFLAGS += -g 
+CXXFLAGS += -g -pthread
 #-Wall -Wextra -pthread
 
 # All Google Test headers.  Usually you shouldn't change this
