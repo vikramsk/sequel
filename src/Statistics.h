@@ -7,24 +7,11 @@
 
 using namespace std;
 
-class AttributeStats {
-   private:
-    AttributeStats(string a, string rn, int nd)
-        : attribute(a), relationName(rn), numDistincts(nd) {}
-
-    string attribute;
-    string relationName;
-    int numDistincts;
-
-    friend class RelationStats;
-    friend class Statistics;
-};
-
 class RelationStats {
    private:
     std::unordered_set<string> relations;
     int numTuples;
-    unordered_map<string, AttributeStats *> attributeStats;
+    unordered_map<string, int> attrDistinctsMap;
 
     friend class Statistics;
 };
