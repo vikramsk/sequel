@@ -66,7 +66,7 @@ build/src/test3.o: src/test3.cpp
 
 build/src/y.tab.o: src/Parser.y 
 	yacc -d src/Parser.y -o build/src/y.tab.c
-	sed -i build/src/y.tab.h -e "/int yyparse (void);/d" || true
+	sed -i build/src/y.tab.h -e "/int yyparse (void);/d" || true # Hack for continuing execution on MAC
 	$(shell $(tag))
 	g++ -w -c -Isrc/ build/src/y.tab.c 
 	mv y.tab.o build/src/
@@ -74,7 +74,6 @@ build/src/y.tab.o: src/Parser.y
 build/src/yyfunc.tab.o: src/ParserFunc.y
 	yacc -p "yyfunc" -b "yyfunc" -d src/ParserFunc.y -o build/src/yyfunc.tab.c
 	$(shell $(tag1))
-	#sed $(tag) yyfunc.tab.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" 
 	g++ -w -c -Isrc/ build/src/yyfunc.tab.c
 	mv yyfunc.tab.o build/src/
 
