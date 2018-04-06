@@ -66,6 +66,7 @@ build/src/test3.o: src/test3.cpp
 
 build/src/y.tab.o: src/Parser.y 
 	yacc -d src/Parser.y -o build/src/y.tab.c
+	sed -i build/src/y.tab.h -e "/int yyparse (void);/d"
 	$(shell $(tag))
 	g++ -w -c -Isrc/ build/src/y.tab.c 
 	mv y.tab.o build/src/
