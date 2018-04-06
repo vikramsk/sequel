@@ -9,13 +9,13 @@ platform=$(shell uname)
 ifeq ($(platform),Linux)
 	tag = 'sed -n build/src/y.tab.c -e "s/  _attribute_ ((_unused))$$/# ifndef __cplusplus\n  __attribute_ ((_unused_));\n# endif/"'
 else
-	tag = 'sed -i "" "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" build/src/y.tab.c"'
+	tag = 'sed -i "" "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" build/src/y.tab.c'
 endif
 
 ifeq ($(platform),Linux)
 	tag1 = 'sed -n build/src/yyfunc.tab.c -e "s/  _attribute_ ((_unused))$$/# ifndef __cplusplus\n  __attribute_ ((_unused_));\n# endif/"'
 else
-	tag1 = 'sed -i "" "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" build/src/yyfunc.tab.c"'
+	tag1 = 'sed -i "" "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" build/src/yyfunc.tab.c'
 endif
 
 BUILD_DIR ?= build
@@ -66,7 +66,7 @@ build/src/test3.o: src/test3.cpp
 
 build/src/y.tab.o: src/Parser.y 
 	yacc -d src/Parser.y -o build/src/y.tab.c
-	sed -i build/src/y.tab.h -e "/int yyparse (void);/d"
+	sed -i build/src/y.tab.h -e "/int yyparse (void);/d" || true
 	$(shell $(tag))
 	g++ -w -c -Isrc/ build/src/y.tab.c 
 	mv y.tab.o build/src/
