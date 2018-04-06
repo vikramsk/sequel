@@ -1,4 +1,6 @@
 #include "Statistics.h"
+#include <string>
+#include <unordered_map>
 
 Statistics::Statistics() {}
 Statistics::Statistics(Statistics &copyMe) {}
