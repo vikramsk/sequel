@@ -144,4 +144,4 @@ testsuite: $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/s
 
 clean:
 	$(RM) -r $(BUILD_DIR)
-	rm -f  gtest.a gtest_main.a *.o
+	rm -f  gtest.a gtest_main.a *.o Statistics.txt

@@ -9,8 +9,8 @@ using namespace std;
 
 class RelationStats {
    private:
-    std::unordered_set<string> relations;
     int numTuples;
+    std::unordered_set<string> relations;
     unordered_map<string, int> attrDistinctsMap;
 
     friend class Statistics;
