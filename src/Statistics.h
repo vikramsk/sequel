@@ -10,9 +10,12 @@ using namespace std;
 
 class RelationStats {
    private:
-    int numTuples;
+    double numTuples;
     std::unordered_set<string> relations;
     unordered_map<string, int> attrDistinctsMap;
+
+    RelationStats();
+    RelationStats(RelationStats &copyMe);  // Performs deep copy
 
     friend class Statistics;
 };
@@ -26,6 +29,10 @@ class Statistics {
     void validateComparisonOp(struct ComparisonOp *parseTree,
                               vector<string> relations);
     void validateOperand(struct Operand *op, vector<string> relations);
+
+    void evaluateAndList(struct AndList *parseTree, vector<string> relationNames);
+    void evaluateOrList(struct OrList *parseTree, vector<string> relationNames);
+    void applyPredicate(struct ComparisonOp *parseTree, vector<string> relNames);
 
    public:
     Statistics();

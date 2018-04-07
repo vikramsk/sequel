@@ -20,15 +20,19 @@ vector<string> getStrings(char *vals[], int finalIndex) {
     return strs;
 }
 
+RelationStats::RelationStats() {}
+
+RelationStats::RelationStats(RelationStats &copyMe) {
+    relations = copyMe.relations;
+    numTuples = copyMe.numTuples;
+    attrDistinctsMap = copyMe.attrDistinctsMap;
+}
+
 Statistics::Statistics() {}
 
 Statistics::Statistics(Statistics &copyMe) {
     for (auto rel : copyMe.relationStats) {
-        RelationStats rs = *rel.second;
-        relationStats[rel.first] = new RelationStats();
-        relationStats[rel.first]->relations = rs.relations;
-        relationStats[rel.first]->numTuples = rs.numTuples;
-        relationStats[rel.first]->attrDistinctsMap = rs.attrDistinctsMap;
+        relationStats[rel.first] = new RelationStats(*rel.second);
     }
 }
 
@@ -69,11 +73,7 @@ void Statistics::CopyRel(char *oldName, char *newName) {
         cerr << "relation to be copied doesn't exist: " << oldRel << endl;
         exit(1);
     }
-    relationStats[newRel] = new RelationStats();
-    relationStats[newRel]->relations = relationStats[oldRel]->relations;
-    relationStats[newRel]->numTuples = relationStats[oldRel]->numTuples;
-    relationStats[newRel]->attrDistinctsMap =
-        relationStats[oldRel]->attrDistinctsMap;
+    relationStats[newRel] = new RelationStats(*relationStats[oldRel]);
 }
 
 void Statistics::Read(char *fromWhere) {
@@ -151,6 +151,8 @@ void Statistics::Apply(struct AndList *parseTree, char *relNames[],
     }
 
     validateAndList(parseTree, relations);
+
+    evaluateAndList(parseTree, relations);
 }
 
 void Statistics::validateAndList(struct AndList *parseTree,
@@ -200,4 +202,25 @@ void Statistics::verifyMerge(vector<string> relations) {
 }
 
 double Statistics::Estimate(struct AndList *parseTree, char **relNames,
-                            int numToJoin) {}
+                            int numToJoin) {
+    Statistics relJoin(*this);
+    relJoin.Apply(parseTree,relNames,numToJoin);
+    // TODO: Look up any relName for numTuples
+    string sortedRelsKey;
+    return relJoin.relationStats[sortedRelsKey]->numTuples;
+}
+
+void Statistics::evaluateAndList(struct AndList *parseTree, vector<string> relNames) {
+    evaluateOrList(parseTree->left,relNames);
+    if (parseTree->rightAnd != NULL) {
+        evaluateAndList(parseTree->rightAnd,relNames);
+    }
+}
+
+void Statistics::evaluateOrList(struct OrList *parseTree, vector<string> relNames) {
+
+}
+
+void Statistics::applyPredicate(struct ComparisonOp *parseTree, vector<string> relNames) {
+
+}
