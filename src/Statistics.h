@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 #include "ParseTree.h"
 
 using namespace std;
@@ -19,6 +20,12 @@ class RelationStats {
 class Statistics {
    private:
     unordered_map<string, RelationStats *> relationStats;
+    void verifyMerge(vector<string> relations);
+    void validateAndList(struct AndList *parseTree, vector<string> relations);
+    void validateOrList(struct OrList *parseTree, vector<string> relations);
+    void validateComparisonOp(struct ComparisonOp *parseTree,
+                              vector<string> relations);
+    void validateOperand(struct Operand *op, vector<string> relations);
 
    public:
     Statistics();

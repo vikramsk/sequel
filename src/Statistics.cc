@@ -12,6 +12,14 @@ string getString(char *val) {
     return str;
 }
 
+vector<string> getStrings(char *vals[], int finalIndex) {
+    vector<string> strs;
+    for (int i = 0; i < finalIndex; i++) {
+        strs.push_back(getString(vals[i]));
+    }
+    return strs;
+}
+
 Statistics::Statistics() {}
 
 Statistics::Statistics(Statistics &copyMe) {
@@ -23,6 +31,7 @@ Statistics::Statistics(Statistics &copyMe) {
         relationStats[rel.first]->attrDistinctsMap = rs.attrDistinctsMap;
     }
 }
+
 Statistics::~Statistics() {}
 
 void Statistics::AddRel(char *relName, int numTuples) {
@@ -125,7 +134,70 @@ void Statistics::Write(char *fromWhere) {
 }
 
 void Statistics::Apply(struct AndList *parseTree, char *relNames[],
-                       int numToJoin) {}
+                       int numToJoin) {
+    vector<string> relations = getStrings(relNames, numToJoin);
+    verifyMerge(relations);
+
+    if (!parseTree) {
+        bool sameSet = true;
+        for (auto r : relations) {
+            if (relationStats[relations[0]]->relations.find(r) ==
+                relationStats[relations[0]]->relations.end()) {
+                sameSet = false;
+                break;
+            }
+        }
+        if (sameSet) return;
+    }
+
+    validateAndList(parseTree, relations);
+}
+
+void Statistics::validateAndList(struct AndList *parseTree,
+                                 vector<string> relations) {
+    if (parseTree->left) validateOrList(parseTree->left, relations);
+    if (parseTree->rightAnd) validateAndList(parseTree->rightAnd, relations);
+}
+
+void Statistics::validateOrList(struct OrList *parseTree,
+                                vector<string> relations) {
+    if (parseTree->left) validateComparisonOp(parseTree->left, relations);
+    if (parseTree->rightOr) validateOrList(parseTree->rightOr, relations);
+}
+
+void Statistics::validateComparisonOp(struct ComparisonOp *parseTree,
+                                      vector<string> relations) {
+    if (parseTree->left) validateOperand(parseTree->left, relations);
+    if (parseTree->right) validateOperand(parseTree->right, relations);
+}
+
+void Statistics::validateOperand(struct Operand *op, vector<string> relations) {
+    for (auto r : relations) {
+        if (relationStats[r]->attrDistinctsMap.find(getString(op->value)) ==
+            relationStats[r]->attrDistinctsMap.end()) {
+            return;
+        }
+    }
+    // attribute not found in any relation.
+    cerr << "invalid attribute" << endl;
+    exit(1);
+}
+
+void Statistics::verifyMerge(vector<string> relations) {
+    int statRelCount = 0;
+
+    for (auto r : relations) {
+        if (relationStats.find(r) == relationStats.end()) {
+            cerr << "relation data doesn't exist for relation: " << r << endl;
+            exit(1);
+        }
+        statRelCount += relationStats[r]->relations.size();
+    }
+    if (statRelCount != relations.size()) {
+        cerr << "invalid match for relations" << endl;
+        exit(1);
+    }
+}
 
 double Statistics::Estimate(struct AndList *parseTree, char **relNames,
                             int numToJoin) {}
