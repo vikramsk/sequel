@@ -32,8 +32,11 @@ void Statistics::AddRel(char *relName, int numTuples) {
         relationStats[rel]->relations.insert(rel);
         relationStats[rel]->numTuples = numTuples;
     } else {
+        if (relationStats[rel]->relations.size() > 1) {
+            cerr << "invalid update query" << endl;
+            exit(1);
+        }
         relationStats[rel]->numTuples = numTuples;
-        // TODO: Handle case when rel is a set of more than one relations
     }
 }
 
