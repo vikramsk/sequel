@@ -1,8 +1,9 @@
 #include "Statistics.h"
 #include <fstream>
 #include <iostream>
-#include <string>
+#include <cstring>
 #include <unordered_map>
+#include <algorithm>
 #include <vector>
 
 using namespace std;
@@ -205,22 +206,148 @@ double Statistics::Estimate(struct AndList *parseTree, char **relNames,
                             int numToJoin) {
     Statistics relJoin(*this);
     relJoin.Apply(parseTree,relNames,numToJoin);
-    // TODO: Look up any relName for numTuples
-    string sortedRelsKey;
-    return relJoin.relationStats[sortedRelsKey]->numTuples;
+    // Look up any relName for numTuples
+    string key;
+    if (parseTree->left->left->left->code == NAME) {
+        key = getString(parseTree->left->left->left->value);
+    } else {
+        key = getString(parseTree->left->left->right->value);
+    }
+    return relJoin.relationStats[key]->numTuples;
 }
 
-void Statistics::evaluateAndList(struct AndList *parseTree, vector<string> relNames) {
-    evaluateOrList(parseTree->left,relNames);
+void Statistics::evaluateAndList(struct AndList *parseTree, vector<string> relations) {
+    evaluateOrList(parseTree->left,relations);
     if (parseTree->rightAnd != NULL) {
-        evaluateAndList(parseTree->rightAnd,relNames);
+        evaluateAndList(parseTree->rightAnd,relations);
     }
 }
 
-void Statistics::evaluateOrList(struct OrList *parseTree, vector<string> relNames) {
+void Statistics::evaluateOrList(struct OrList *parseTree, vector<string> relations) {
+    vector<ComparisonOp *> orExpressions = flattenOrExpressionsTree(parseTree);
+    double numTuplesOR = 0;
+    double numTuplesAND = 0;
 
+    // Save state for future ORing
+    Statistics stats(*this);
+
+    // Updates numTuplesOR as result of ORing all predicates with literal values
+    // Update state for direct use in ANDing
+    int stateIndex = processORWithLitValues(orExpressions,relations,numTuplesOR);
+    
+    if(stateIndex == orExpressions.size())  return;
+        
+    // OR remaining predicates 
+    for (int index = stateIndex; index < orExpressions.size(); index++) {
+        numTuplesOR += getStatsForState(stats,orExpressions[index],relations);
+    }
+
+    // AND remaining predicates
+    evaluateANDofOR(orExpressions,relations,stateIndex,numTuplesAND);
+    char *mergingOperand = orExpressions[stateIndex]->left->value;
+    AddRel(mergingOperand,numTuplesOR-numTuplesAND); //update num tuples value
 }
 
-void Statistics::applyPredicate(struct ComparisonOp *parseTree, vector<string> relNames) {
+vector<ComparisonOp *> Statistics::flattenOrExpressionsTree(struct OrList *parseTree) {
+    vector<ComparisonOp *> expressions;
+    expressions.push_back(parseTree->left);
+    while (parseTree->rightOr != NULL) {
+        parseTree = parseTree->rightOr;
+        expressions.push_back(parseTree->left);
+    }
+    // Sort expressions such that all attribute-literal predicates are first
+    sort(expressions.begin(), expressions.end(), [] (ComparisonOp *exp1, ComparisonOp *exp2)
+        {
+            int op1Left,op1Right,op2Left,op2Right;
+            char *op1Val, *op2Val;
+            if (exp1->left->code == NAME) {
+                op1Left = NAME;
+                op1Right = exp1->right->code;
+                if (op1Right == NAME && strcmp(exp1->left->value,exp1->right->value) > 0) {
+                    op1Val = exp1->right->value;
+                } else {
+                    op1Val = exp1->left->value;
+                }
+            } else {
+                op1Left = NAME;
+                op1Right = exp1->left->code;
+                op1Val = exp1->right->value;
+            }
+
+            if (exp2->left->code == NAME) {
+                op2Left = NAME;
+                op2Right = exp2->right->code;
+                if (op2Right == NAME && strcmp(exp2->left->value,exp2->right->value) > 0) {
+                    op2Val = exp2->right->value;
+                } else {
+                    op2Val = exp2->left->value;
+                }
+            } else {
+                op2Left = NAME;
+                op2Right = exp2->left->code;
+                op2Val = exp2->right->value;
+            }
+            
+            int retVal = 0;
+            if (op1Left == NAME && op1Right == NAME) {
+                retVal++;
+                if (op2Left == NAME && op2Right == NAME) {
+                    retVal = strcmp(op1Val,op2Val);
+                }
+            } else {
+                retVal--;
+                if (op2Left == NAME && op2Right != NAME) {
+                    retVal = strcmp(op1Val,op2Val);
+                }
+            }
+            
+            return retVal;
+        });
+    return expressions;
+}
+
+int Statistics::processORWithLitValues(vector<ComparisonOp *> orExpressions, vector<string> relations, double &numTuplesOR) {
+    // Save state for future ORing
+    Statistics stats(*this);
+    
+    int end = 0;
+    while (end < orExpressions.size() && isPredicateWithLitValue(orExpressions[end])) {
+        end++;
+    }
+
+    int i = 0;
+    while (i < end) {
+        double sameOperandTuples = 0;
+        char *prevOperand = orExpressions[i]->left->value;
+        while (i < end && strcmp(prevOperand,orExpressions[i]->left->value) == 0) {
+            sameOperandTuples += getStatsForState(stats,orExpressions[i++],relations);
+        }
+        AddRel(prevOperand,sameOperandTuples); //update num tuples value
+        numTuplesOR += sameOperandTuples;
+    }
+
+    return end;
+}
+
+
+bool Statistics::isPredicateWithLitValue(ComparisonOp * exp) {
+    return exp->right->code != NAME;
+}
+
+double Statistics::getStatsForState(Statistics &stateToCopy, ComparisonOp * exp, vector<string> relations) {
+    Statistics orStats(stateToCopy);
+    return orStats.applyPredicate(exp,relations);
+}
+
+
+void Statistics::evaluateANDofOR(vector<ComparisonOp *> expressions, vector<string> relations, int index, double &numTuplesAND) {
+    do
+    {
+        numTuplesAND += applyPredicate(expressions[index++],relations);
+    } while (index < expressions.size());
+}
+
+
+double Statistics::applyPredicate(struct ComparisonOp *parseTree, vector<string> relations) {
 
 }

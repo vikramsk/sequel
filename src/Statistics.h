@@ -29,10 +29,14 @@ class Statistics {
     void validateComparisonOp(struct ComparisonOp *parseTree,
                               vector<string> relations);
     void validateOperand(struct Operand *op, vector<string> relations);
-
-    void evaluateAndList(struct AndList *parseTree, vector<string> relationNames);
-    void evaluateOrList(struct OrList *parseTree, vector<string> relationNames);
-    void applyPredicate(struct ComparisonOp *parseTree, vector<string> relNames);
+    void evaluateAndList(struct AndList *parseTree, vector<string> relations);
+    void evaluateOrList(struct OrList *parseTree, vector<string> relations);
+    vector<ComparisonOp *> flattenOrExpressionsTree(struct OrList *parseTree);
+    int processORWithLitValues(vector<ComparisonOp *> expressions, vector<string> relations, double &numTuplesOR);
+    bool isPredicateWithLitValue(ComparisonOp * exp);
+    double getStatsForState(Statistics &stateToCopy, ComparisonOp * exp, vector<string> relations);
+    void evaluateANDofOR(vector<ComparisonOp *> expressions, vector<string> relations, int index, double &numTuplesAND);
+    double applyPredicate(struct ComparisonOp *parseTree, vector<string> relations);
 
    public:
     Statistics();
