@@ -10,19 +10,11 @@ using namespace std;
 
 RelationStats::RelationStats() {}
 
-RelationStats::~RelationStats() {
-    // relations.clear();
-    // attrDistinctsMap.clear();
-}
+RelationStats::~RelationStats() {}
 
 Statistics::Statistics() {}
 
-Statistics::~Statistics() {
-    // for (auto r : relationStats) {
-    //    delete (r.second);
-    //}
-    // relationStats.clear();
-}
+Statistics::~Statistics() {}
 
 string getString(char *val) {
     std::string str(val);
@@ -56,10 +48,6 @@ void Statistics::AddRel(char *relName, double numTuples) {
         relationStats[rel]->relations.insert(rel);
         relationStats[rel]->numTuples = (double)numTuples;
     } else {
-        // if (relationStats[rel]->relations.size() > 1) {
-        //     cerr << "invalid update query" << endl;
-        //     exit(1);
-        // }
         relationStats[rel]->numTuples = (double)numTuples;
     }
 }
@@ -157,14 +145,21 @@ void Statistics::Apply(struct AndList *parseTree, char *relNames[],
 
     if (!parseTree) {
         bool sameSet = true;
+        string rel2;
         for (auto r : relations) {
             if (relationStats[relations[0]]->relations.find(r) ==
                 relationStats[relations[0]]->relations.end()) {
                 sameSet = false;
+                rel2 = r;
                 break;
             }
         }
-        if (sameSet) return;
+        if (sameSet)
+            return;
+        else
+            return mergeRelationStats(relations[0], rel2,
+                                      relationStats[relations[0]]->numTuples *
+                                          relationStats[rel2]->numTuples);
     }
 
     validateAndList(parseTree, relations);
@@ -434,15 +429,16 @@ int Statistics::processORWithLitValues(vector<ComparisonOp *> orExpressions,
     // Save state for future ORing
     Statistics stats(*this);
     int i = 0;
-    if(!isPredicateWithLitValue(orExpressions[i])) return i;
-    
+    if (!isPredicateWithLitValue(orExpressions[i])) return i;
+
     double sameOperandTuples = 0.0;
     char *prevOperand = orExpressions[i]->left->value;
     do {
         sameOperandTuples +=
             getStatsForState(stats, orExpressions[i++], relations);
-    } while(i < orExpressions.size() && isPredicateWithLitValue(orExpressions[i])
-               && strcmp(prevOperand, orExpressions[i]->left->value) == 0);
+    } while (i < orExpressions.size() &&
+             isPredicateWithLitValue(orExpressions[i]) &&
+             strcmp(prevOperand, orExpressions[i]->left->value) == 0);
     char *rel = getRelationName(getString(prevOperand), relations);
     AddRel(rel, sameOperandTuples);  // update num tuples value
     numTuplesOR += sameOperandTuples;

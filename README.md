@@ -22,8 +22,10 @@ The repository consists of the following:
  - Enter the root directory and run:
 	 `make all`
    This will create a build directory in the root folder along with the executables.
- - To run console driven tests for assignment 3 (relational operations), execute:
+ - To run console driven tests for assignment 4.1 (statistics estimation), execute:
 	 `./build/test.out`
+ - To run console driven tests for assignment 3 (relational operations), execute:
+	 `./build/test3.out`
  - To run console driven tests for assignment 2 (sorted file implementation), execute: 
 	 `./build/test2.out`
  - To run console driven tests for assignment 1 (heap file implementation), execute: 
