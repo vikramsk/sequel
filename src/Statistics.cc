@@ -54,13 +54,13 @@ void Statistics::AddRel(char *relName, int numTuples) {
     if (relationStats.find(rel) == relationStats.end()) {
         relationStats[rel] = new RelationStats();
         relationStats[rel]->relations.insert(rel);
-        relationStats[rel]->numTuples = numTuples;
+        relationStats[rel]->numTuples = (double)numTuples;
     } else {
         // if (relationStats[rel]->relations.size() > 1) {
         //     cerr << "invalid update query" << endl;
         //     exit(1);
         // }
-        relationStats[rel]->numTuples = numTuples;
+        relationStats[rel]->numTuples = (double)numTuples;
     }
 }
 
@@ -241,26 +241,27 @@ double Statistics::applyPredicate(struct ComparisonOp *cnf,
     // assuming only one operand is an attribute.
     if (cnf->code != EQUALS) {
         if (cnf->left->code == NAME)
-            resultTuples = lTuples / 3;
+            resultTuples = lTuples / 3.0;
         else
-            resultTuples = rTuples / 3;
+            resultTuples = rTuples / 3.0;
 
         return resultTuples;
     }
 
     // equality cnf
     if (cnf->left->code == NAME && cnf->right->code != NAME)
-        resultTuples = lTuples / lDistincts;
+        resultTuples = lTuples / (double)lDistincts;
     else if (cnf->right->code == NAME && cnf->left->code != NAME)
-        resultTuples = rTuples / rDistincts;
+        resultTuples = rTuples / (double)rDistincts;
     else {
-        resultTuples = lTuples * rTuples;
+        resultTuples = (double)(lTuples * rTuples);
         if (rTuples > lTuples)
-            resultTuples /= lDistincts;
+            resultTuples = resultTuples / (double)lDistincts;
         else
-            resultTuples /= rDistincts;
+            resultTuples = resultTuples / (double)rDistincts;
         mergeRelationStats(lRel, rRel, resultTuples);
     }
+
     return resultTuples;
 }
 
@@ -313,7 +314,8 @@ double Statistics::Estimate(struct AndList *parseTree, char **relNames,
     int dummy;
     string temp;
     double numTuples;
-    relJoin.loadAttributeInfo(attr, getStrings(relNames, numToJoin), temp, numTuples, dummy);
+    relJoin.loadAttributeInfo(attr, getStrings(relNames, numToJoin), temp,
+                              numTuples, dummy);
     return numTuples;
 }
 
@@ -347,22 +349,22 @@ void Statistics::evaluateOrList(struct OrList *parseTree,
     }
 
     // AND remaining predicates
-    if((stateIndex + 1) != orExpressions.size()) {
+    if ((stateIndex + 1) != orExpressions.size()) {
         evaluateANDofOR(orExpressions, relations, stateIndex, numTuplesAND);
     }
-    
+
     char *mergingOperand = orExpressions[stateIndex]->left->value;
-    char *rel = getRelationName(getString(mergingOperand),relations);
-    AddRel(rel,numTuplesOR - numTuplesAND);  // update num tuples value
+    char *rel = getRelationName(getString(mergingOperand), relations);
+    AddRel(rel, numTuplesOR - numTuplesAND);  // update num tuples value
 }
 
-char * Statistics::getRelationName(string attrName, vector<string> relations) {
+char *Statistics::getRelationName(string attrName, vector<string> relations) {
     int dummy;
     double temp;
     string relName;
     loadAttributeInfo(attrName, relations, relName, temp, dummy);
-    char *rel = new char[relName.length()+1]; 
-    strcpy(rel, relName.c_str()); 
+    char *rel = new char[relName.length() + 1];
+    strcpy(rel, relName.c_str());
     return rel;
 }
 
@@ -441,14 +443,14 @@ int Statistics::processORWithLitValues(vector<ComparisonOp *> orExpressions,
 
     int i = 0;
     while (i < end) {
-        double sameOperandTuples = 0;
+        double sameOperandTuples = 0.0;
         char *prevOperand = orExpressions[i]->left->value;
         while (i < end &&
                strcmp(prevOperand, orExpressions[i]->left->value) == 0) {
             sameOperandTuples +=
                 getStatsForState(stats, orExpressions[i++], relations);
         }
-        char *rel = getRelationName(getString(prevOperand),relations);
+        char *rel = getRelationName(getString(prevOperand), relations);
         AddRel(rel, sameOperandTuples);  // update num tuples value
         numTuplesOR += sameOperandTuples;
     }
