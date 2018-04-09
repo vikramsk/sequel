@@ -1,12 +1,28 @@
 #include "Statistics.h"
+#include <algorithm>
+#include <cstring>
 #include <fstream>
 #include <iostream>
-#include <cstring>
 #include <unordered_map>
-#include <algorithm>
 #include <vector>
 
 using namespace std;
+
+RelationStats::RelationStats() {}
+
+RelationStats::~RelationStats() {
+    // relations.clear();
+    // attrDistinctsMap.clear();
+}
+
+Statistics::Statistics() {}
+
+Statistics::~Statistics() {
+    // for (auto r : relationStats) {
+    //    delete (r.second);
+    //}
+    // relationStats.clear();
+}
 
 string getString(char *val) {
     std::string str(val);
@@ -21,23 +37,17 @@ vector<string> getStrings(char *vals[], int finalIndex) {
     return strs;
 }
 
-RelationStats::RelationStats() {}
-
 RelationStats::RelationStats(RelationStats &copyMe) {
     relations = copyMe.relations;
     numTuples = copyMe.numTuples;
     attrDistinctsMap = copyMe.attrDistinctsMap;
 }
 
-Statistics::Statistics() {}
-
 Statistics::Statistics(Statistics &copyMe) {
     for (auto rel : copyMe.relationStats) {
         relationStats[rel.first] = new RelationStats(*rel.second);
     }
 }
-
-Statistics::~Statistics() {}
 
 void Statistics::AddRel(char *relName, int numTuples) {
     string rel = getString(relName);
@@ -178,37 +188,118 @@ void Statistics::validateComparisonOp(struct ComparisonOp *parseTree,
 }
 
 void Statistics::validateOperand(struct Operand *op, vector<string> relations) {
+    if (op->code != NAME) {
+        return;
+    }
+
     for (auto r : relations) {
-        if (relationStats[r]->attrDistinctsMap.find(getString(op->value)) ==
+        if (relationStats[r]->attrDistinctsMap.find(getString(op->value)) !=
             relationStats[r]->attrDistinctsMap.end()) {
             return;
         }
     }
+
     // attribute not found in any relation.
     cerr << "invalid attribute" << endl;
     exit(1);
 }
 
 void Statistics::verifyMerge(vector<string> relations) {
-    int statRelCount = 0;
-
+    unordered_set<string> uniqueRels;
     for (auto r : relations) {
         if (relationStats.find(r) == relationStats.end()) {
             cerr << "relation data doesn't exist for relation: " << r << endl;
             exit(1);
         }
-        statRelCount += relationStats[r]->relations.size();
+        uniqueRels.insert(relationStats[r]->relations.begin(),
+                          relationStats[r]->relations.end());
     }
-    if (statRelCount != relations.size()) {
+    if (uniqueRels.size() != relations.size()) {
         cerr << "invalid match for relations" << endl;
         exit(1);
     }
 }
 
+double Statistics::applyPredicate(struct ComparisonOp *cnf,
+                                  vector<string> relations) {
+    double resultTuples;
+    double lTuples, rTuples;
+    int lDistincts, rDistincts;
+    string lRel, rRel;
+
+    string lAttr = getString(cnf->left->value);
+    string rAttr = getString(cnf->right->value);
+
+    if (cnf->left->code == NAME)
+        loadAttributeInfo(lAttr, relations, lRel, lTuples, lDistincts);
+    if (cnf->right->code == NAME)
+        loadAttributeInfo(rAttr, relations, rRel, rTuples, rDistincts);
+
+    // assuming only one operand is an attribute.
+    if (cnf->code != EQUALS) {
+        if (cnf->left->code == NAME)
+            resultTuples = lTuples / 3;
+        else
+            resultTuples = rTuples / 3;
+
+        return resultTuples;
+    }
+
+    // equality cnf
+    if (cnf->left->code == NAME && cnf->right->code != NAME)
+        resultTuples = lTuples / lDistincts;
+    else if (cnf->right->code == NAME && cnf->left->code != NAME)
+        resultTuples = rTuples / rDistincts;
+    else {
+        resultTuples = lTuples * rTuples;
+        if (rTuples > lTuples)
+            resultTuples /= lDistincts;
+        else
+            resultTuples /= rDistincts;
+        mergeRelationStats(lRel, rRel, resultTuples);
+    }
+    return resultTuples;
+}
+
+void Statistics::loadAttributeInfo(string attr, vector<string> relations,
+                                   string &rel, double &numTuples,
+                                   int &numDistincts) {
+    for (auto r : relations) {
+        if (relationStats[r]->attrDistinctsMap.find(attr) ==
+            relationStats[r]->attrDistinctsMap.end())
+            continue;
+
+        numTuples = relationStats[r]->numTuples;
+        numDistincts = relationStats[r]->attrDistinctsMap[attr];
+        rel = r;
+        return;
+    }
+}
+
+void Statistics::mergeRelationStats(string rel1, string rel2,
+                                    double tupleCount) {
+    relationStats[rel1]->numTuples = tupleCount;
+    if (relationStats[rel1] == relationStats[rel2]) {
+        return;
+    }
+
+    for (auto attr : relationStats[rel2]->attrDistinctsMap) {
+        relationStats[rel1]->attrDistinctsMap[attr.first] = attr.second;
+    }
+
+    RelationStats *tmp = relationStats[rel2];
+    // update relStat pointers for each relation.
+    for (auto rel : relationStats[rel2]->relations) {
+        relationStats[rel1]->relations.insert(rel);
+        relationStats[rel] = relationStats[rel1];
+    }
+    delete tmp;
+}
+
 double Statistics::Estimate(struct AndList *parseTree, char **relNames,
                             int numToJoin) {
     Statistics relJoin(*this);
-    relJoin.Apply(parseTree,relNames,numToJoin);
+    relJoin.Apply(parseTree, relNames, numToJoin);
     // Look up any relName for numTuples
     string key;
     if (parseTree->left->left->left->code == NAME) {
@@ -219,14 +310,16 @@ double Statistics::Estimate(struct AndList *parseTree, char **relNames,
     return relJoin.relationStats[key]->numTuples;
 }
 
-void Statistics::evaluateAndList(struct AndList *parseTree, vector<string> relations) {
-    evaluateOrList(parseTree->left,relations);
+void Statistics::evaluateAndList(struct AndList *parseTree,
+                                 vector<string> relations) {
+    evaluateOrList(parseTree->left, relations);
     if (parseTree->rightAnd != NULL) {
-        evaluateAndList(parseTree->rightAnd,relations);
+        evaluateAndList(parseTree->rightAnd, relations);
     }
 }
 
-void Statistics::evaluateOrList(struct OrList *parseTree, vector<string> relations) {
+void Statistics::evaluateOrList(struct OrList *parseTree,
+                                vector<string> relations) {
     vector<ComparisonOp *> orExpressions = flattenOrExpressionsTree(parseTree);
     double numTuplesOR = 0;
     double numTuplesAND = 0;
@@ -236,22 +329,25 @@ void Statistics::evaluateOrList(struct OrList *parseTree, vector<string> relatio
 
     // Updates numTuplesOR as result of ORing all predicates with literal values
     // Update state for direct use in ANDing
-    int stateIndex = processORWithLitValues(orExpressions,relations,numTuplesOR);
-    
-    if(stateIndex == orExpressions.size())  return;
-        
-    // OR remaining predicates 
+    int stateIndex =
+        processORWithLitValues(orExpressions, relations, numTuplesOR);
+
+    if (stateIndex == orExpressions.size()) return;
+
+    // OR remaining predicates
     for (int index = stateIndex; index < orExpressions.size(); index++) {
-        numTuplesOR += getStatsForState(stats,orExpressions[index],relations);
+        numTuplesOR += getStatsForState(stats, orExpressions[index], relations);
     }
 
     // AND remaining predicates
-    evaluateANDofOR(orExpressions,relations,stateIndex,numTuplesAND);
+    evaluateANDofOR(orExpressions, relations, stateIndex, numTuplesAND);
     char *mergingOperand = orExpressions[stateIndex]->left->value;
-    AddRel(mergingOperand,numTuplesOR-numTuplesAND); //update num tuples value
+    AddRel(mergingOperand,
+           numTuplesOR - numTuplesAND);  // update num tuples value
 }
 
-vector<ComparisonOp *> Statistics::flattenOrExpressionsTree(struct OrList *parseTree) {
+vector<ComparisonOp *> Statistics::flattenOrExpressionsTree(
+    struct OrList *parseTree) {
     vector<ComparisonOp *> expressions;
     expressions.push_back(parseTree->left);
     while (parseTree->rightOr != NULL) {
@@ -259,62 +355,67 @@ vector<ComparisonOp *> Statistics::flattenOrExpressionsTree(struct OrList *parse
         expressions.push_back(parseTree->left);
     }
     // Sort expressions such that all attribute-literal predicates are first
-    sort(expressions.begin(), expressions.end(), [] (ComparisonOp *exp1, ComparisonOp *exp2)
-        {
-            int op1Left,op1Right,op2Left,op2Right;
-            char *op1Val, *op2Val;
-            if (exp1->left->code == NAME) {
-                op1Left = NAME;
-                op1Right = exp1->right->code;
-                if (op1Right == NAME && strcmp(exp1->left->value,exp1->right->value) > 0) {
-                    op1Val = exp1->right->value;
-                } else {
-                    op1Val = exp1->left->value;
-                }
-            } else {
-                op1Left = NAME;
-                op1Right = exp1->left->code;
-                op1Val = exp1->right->value;
-            }
+    sort(expressions.begin(), expressions.end(),
+         [](ComparisonOp *exp1, ComparisonOp *exp2) {
+             int op1Left, op1Right, op2Left, op2Right;
+             char *op1Val, *op2Val;
+             if (exp1->left->code == NAME) {
+                 op1Left = NAME;
+                 op1Right = exp1->right->code;
+                 if (op1Right == NAME &&
+                     strcmp(exp1->left->value, exp1->right->value) > 0) {
+                     op1Val = exp1->right->value;
+                 } else {
+                     op1Val = exp1->left->value;
+                 }
+             } else {
+                 op1Left = NAME;
+                 op1Right = exp1->left->code;
+                 op1Val = exp1->right->value;
+             }
 
-            if (exp2->left->code == NAME) {
-                op2Left = NAME;
-                op2Right = exp2->right->code;
-                if (op2Right == NAME && strcmp(exp2->left->value,exp2->right->value) > 0) {
-                    op2Val = exp2->right->value;
-                } else {
-                    op2Val = exp2->left->value;
-                }
-            } else {
-                op2Left = NAME;
-                op2Right = exp2->left->code;
-                op2Val = exp2->right->value;
-            }
-            
-            int retVal = 0;
-            if (op1Left == NAME && op1Right == NAME) {
-                retVal++;
-                if (op2Left == NAME && op2Right == NAME) {
-                    retVal = strcmp(op1Val,op2Val);
-                }
-            } else {
-                retVal--;
-                if (op2Left == NAME && op2Right != NAME) {
-                    retVal = strcmp(op1Val,op2Val);
-                }
-            }
-            
-            return retVal;
-        });
+             if (exp2->left->code == NAME) {
+                 op2Left = NAME;
+                 op2Right = exp2->right->code;
+                 if (op2Right == NAME &&
+                     strcmp(exp2->left->value, exp2->right->value) > 0) {
+                     op2Val = exp2->right->value;
+                 } else {
+                     op2Val = exp2->left->value;
+                 }
+             } else {
+                 op2Left = NAME;
+                 op2Right = exp2->left->code;
+                 op2Val = exp2->right->value;
+             }
+
+             int retVal = 0;
+             if (op1Left == NAME && op1Right == NAME) {
+                 retVal++;
+                 if (op2Left == NAME && op2Right == NAME) {
+                     retVal = strcmp(op1Val, op2Val);
+                 }
+             } else {
+                 retVal--;
+                 if (op2Left == NAME && op2Right != NAME) {
+                     retVal = strcmp(op1Val, op2Val);
+                 }
+             }
+
+             return retVal;
+         });
     return expressions;
 }
 
-int Statistics::processORWithLitValues(vector<ComparisonOp *> orExpressions, vector<string> relations, double &numTuplesOR) {
+int Statistics::processORWithLitValues(vector<ComparisonOp *> orExpressions,
+                                       vector<string> relations,
+                                       double &numTuplesOR) {
     // Save state for future ORing
     Statistics stats(*this);
-    
+
     int end = 0;
-    while (end < orExpressions.size() && isPredicateWithLitValue(orExpressions[end])) {
+    while (end < orExpressions.size() &&
+           isPredicateWithLitValue(orExpressions[end])) {
         end++;
     }
 
@@ -322,35 +423,32 @@ int Statistics::processORWithLitValues(vector<ComparisonOp *> orExpressions, vec
     while (i < end) {
         double sameOperandTuples = 0;
         char *prevOperand = orExpressions[i]->left->value;
-        while (i < end && strcmp(prevOperand,orExpressions[i]->left->value) == 0) {
-            sameOperandTuples += getStatsForState(stats,orExpressions[i++],relations);
+        while (i < end &&
+               strcmp(prevOperand, orExpressions[i]->left->value) == 0) {
+            sameOperandTuples +=
+                getStatsForState(stats, orExpressions[i++], relations);
         }
-        AddRel(prevOperand,sameOperandTuples); //update num tuples value
+        AddRel(prevOperand, sameOperandTuples);  // update num tuples value
         numTuplesOR += sameOperandTuples;
     }
 
     return end;
 }
 
-
-bool Statistics::isPredicateWithLitValue(ComparisonOp * exp) {
+bool Statistics::isPredicateWithLitValue(ComparisonOp *exp) {
     return exp->right->code != NAME || exp->left->code != NAME;
 }
 
-double Statistics::getStatsForState(Statistics &stateToCopy, ComparisonOp * exp, vector<string> relations) {
+double Statistics::getStatsForState(Statistics &stateToCopy, ComparisonOp *exp,
+                                    vector<string> relations) {
     Statistics orStats(stateToCopy);
-    return orStats.applyPredicate(exp,relations);
+    return orStats.applyPredicate(exp, relations);
 }
 
-
-void Statistics::evaluateANDofOR(vector<ComparisonOp *> expressions, vector<string> relations, int index, double &numTuplesAND) {
-    do
-    {
-        numTuplesAND += applyPredicate(expressions[index++],relations);
+void Statistics::evaluateANDofOR(vector<ComparisonOp *> expressions,
+                                 vector<string> relations, int index,
+                                 double &numTuplesAND) {
+    do {
+        numTuplesAND += applyPredicate(expressions[index++], relations);
     } while (index < expressions.size());
-}
-
-
-double Statistics::applyPredicate(struct ComparisonOp *parseTree, vector<string> relations) {
-
 }

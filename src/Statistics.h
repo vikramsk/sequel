@@ -15,6 +15,7 @@ class RelationStats {
     unordered_map<string, int> attrDistinctsMap;
 
     RelationStats();
+    ~RelationStats();
     RelationStats(RelationStats &copyMe);  // Performs deep copy
 
     friend class Statistics;
@@ -32,11 +33,21 @@ class Statistics {
     void evaluateAndList(struct AndList *parseTree, vector<string> relations);
     void evaluateOrList(struct OrList *parseTree, vector<string> relations);
     vector<ComparisonOp *> flattenOrExpressionsTree(struct OrList *parseTree);
-    int processORWithLitValues(vector<ComparisonOp *> expressions, vector<string> relations, double &numTuplesOR);
-    bool isPredicateWithLitValue(ComparisonOp * exp);
-    double getStatsForState(Statistics &stateToCopy, ComparisonOp * exp, vector<string> relations);
-    void evaluateANDofOR(vector<ComparisonOp *> expressions, vector<string> relations, int index, double &numTuplesAND);
-    double applyPredicate(struct ComparisonOp *parseTree, vector<string> relations);
+    int processORWithLitValues(vector<ComparisonOp *> expressions,
+                               vector<string> relations, double &numTuplesOR);
+    bool isPredicateWithLitValue(ComparisonOp *exp);
+    double getStatsForState(Statistics &stateToCopy, ComparisonOp *exp,
+                            vector<string> relations);
+    void evaluateANDofOR(vector<ComparisonOp *> expressions,
+                         vector<string> relations, int index,
+                         double &numTuplesAND);
+    double applyPredicate(struct ComparisonOp *parseTree,
+                          vector<string> relations);
+    void loadAttributeInfo(string attr, vector<string> relations, string &rel,
+                           double &numTuples, int &numDistincts);
+    // merges two relation stats using a relation from each partition, the
+    // tuple count for the merged set.
+    void mergeRelationStats(string rel1, string rel2, double tupleCount);
 
    public:
     Statistics();
