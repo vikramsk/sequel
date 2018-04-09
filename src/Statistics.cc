@@ -349,7 +349,7 @@ void Statistics::evaluateOrList(struct OrList *parseTree,
     }
 
     // AND remaining predicates
-    if ((stateIndex + 1) != orExpressions.size()) {
+    if (orExpressions.size() != 1) {
         evaluateANDofOR(orExpressions, relations, stateIndex, numTuplesAND);
     }
 
@@ -434,28 +434,20 @@ int Statistics::processORWithLitValues(vector<ComparisonOp *> orExpressions,
                                        double &numTuplesOR) {
     // Save state for future ORing
     Statistics stats(*this);
-
-    int end = 0;
-    while (end < orExpressions.size() &&
-           isPredicateWithLitValue(orExpressions[end])) {
-        end++;
-    }
-
     int i = 0;
-    while (i < end) {
-        double sameOperandTuples = 0.0;
-        char *prevOperand = orExpressions[i]->left->value;
-        while (i < end &&
-               strcmp(prevOperand, orExpressions[i]->left->value) == 0) {
-            sameOperandTuples +=
-                getStatsForState(stats, orExpressions[i++], relations);
-        }
-        char *rel = getRelationName(getString(prevOperand), relations);
-        AddRel(rel, sameOperandTuples);  // update num tuples value
-        numTuplesOR += sameOperandTuples;
-    }
-
-    return end;
+    if(!isPredicateWithLitValue(orExpressions[i])) return i;
+    
+    double sameOperandTuples = 0.0;
+    char *prevOperand = orExpressions[i]->left->value;
+    do {
+        sameOperandTuples +=
+            getStatsForState(stats, orExpressions[i++], relations);
+    } while(i < orExpressions.size() && isPredicateWithLitValue(orExpressions[i])
+               && strcmp(prevOperand, orExpressions[i]->left->value) == 0);
+    char *rel = getRelationName(getString(prevOperand), relations);
+    AddRel(rel, sameOperandTuples);  // update num tuples value
+    numTuplesOR += sameOperandTuples;
+    return i;
 }
 
 bool Statistics::isPredicateWithLitValue(ComparisonOp *exp) {
