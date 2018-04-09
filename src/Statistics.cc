@@ -49,7 +49,7 @@ Statistics::Statistics(Statistics &copyMe) {
     }
 }
 
-void Statistics::AddRel(char *relName, int numTuples) {
+void Statistics::AddRel(char *relName, double numTuples) {
     string rel = getString(relName);
     if (relationStats.find(rel) == relationStats.end()) {
         relationStats[rel] = new RelationStats();
@@ -330,8 +330,8 @@ void Statistics::evaluateAndList(struct AndList *parseTree,
 void Statistics::evaluateOrList(struct OrList *parseTree,
                                 vector<string> relations) {
     vector<ComparisonOp *> orExpressions = flattenOrExpressionsTree(parseTree);
-    double numTuplesOR = 0;
-    double numTuplesAND = 0;
+    double numTuplesOR = 0.0;
+    double numTuplesAND = 0.0;
 
     // Save state for future ORing
     Statistics stats(*this);

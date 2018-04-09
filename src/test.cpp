@@ -84,7 +84,6 @@ void q0() {
 
     // test write and read
     s.Write(fileName);
-
     // reload the statistics object from file
     Statistics s1;
     s1.Read(fileName);
@@ -269,6 +268,7 @@ void q5() {
 
     s.AddRel(relName[1], 1500000);
     s.AddAtt(relName[1], "o_orderkey", 1500000);
+    s.AddAtt(relName[1], "o_orderdate", 1500000);
     s.AddAtt(relName[1], "o_custkey", 150000);
 
     s.AddRel(relName[2], 6001215);
@@ -339,6 +339,7 @@ void q7() {
 
     s.AddRel(relName[1], 6001215);
     s.AddAtt(relName[1], "l_orderkey", 1500000);
+    s.AddAtt(relName[1], "l_receiptdate", 1500000);
 
     char *cnf = "(l_receiptdate >'1995-02-01' ) AND (l_orderkey = o_orderkey)";
 

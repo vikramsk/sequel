@@ -32,7 +32,7 @@ class Statistics {
     void validateOperand(struct Operand *op, vector<string> relations);
     void evaluateAndList(struct AndList *parseTree, vector<string> relations);
     void evaluateOrList(struct OrList *parseTree, vector<string> relations);
-    char * getRelationName(string attrName, vector<string> relations);
+    char *getRelationName(string attrName, vector<string> relations);
     vector<ComparisonOp *> flattenOrExpressionsTree(struct OrList *parseTree);
     int processORWithLitValues(vector<ComparisonOp *> expressions,
                                vector<string> relations, double &numTuplesOR);
@@ -55,7 +55,7 @@ class Statistics {
     Statistics(Statistics &copyMe);  // Performs deep copy
     ~Statistics();
 
-    void AddRel(char *relName, int numTuples);
+    void AddRel(char *relName, double numTuples);
     void AddAtt(char *relName, char *attName, int numDistincts);
     void CopyRel(char *oldName, char *newName);
 
