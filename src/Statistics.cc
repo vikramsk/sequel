@@ -84,6 +84,9 @@ void Statistics::CopyRel(char *oldName, char *newName) {
         cerr << "relation to be copied doesn't exist: " << oldRel << endl;
         exit(1);
     }
+    relationStats[newRel] = new RelationStats();
+    relationStats[newRel]->numTuples = relationStats[oldRel]->numTuples;
+    relationStats[newRel]->relations = relationStats[oldRel]->relations;
     for (auto attr : relationStats[oldRel]->attrDistinctsMap) {
         string newAttrName = newRel + "." + attr.first;
         relationStats[newRel]->attrDistinctsMap[newAttrName] = attr.second;
