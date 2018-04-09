@@ -174,7 +174,6 @@ void q3() {
     s.CopyRel("nation", "n2");
     s.CopyRel("supplier", "s");
     s.CopyRel("customer", "c");
-
     char *set1[] = {"s", "n1"};
     char *cnf = "(s.s_nationkey = n1.n_nationkey)";
     yy_scan_string(cnf);
@@ -427,6 +426,7 @@ void q10() {
 
     s.AddRel(relName[1], 1500000);
     s.AddAtt(relName[1], "o_orderkey", 1500000);
+    s.AddAtt(relName[1], "o_orderdate", 1500000);
     s.AddAtt(relName[1], "o_custkey", 150000);
 
     s.AddRel(relName[2], 6001215);
@@ -466,7 +466,7 @@ void q11() {
 
     s.AddRel(relName[0], 200000);
     s.AddAtt(relName[0], "p_partkey", 200000);
-    s.AddAtt(relName[0], "p_conatiner", 40);
+    s.AddAtt(relName[0], "p_container", 40);
 
     s.AddRel(relName[1], 6001215);
     s.AddAtt(relName[1], "l_partkey", 200000);

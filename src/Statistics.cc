@@ -86,7 +86,7 @@ void Statistics::CopyRel(char *oldName, char *newName) {
     }
     relationStats[newRel] = new RelationStats();
     relationStats[newRel]->numTuples = relationStats[oldRel]->numTuples;
-    relationStats[newRel]->relations = relationStats[oldRel]->relations;
+    relationStats[newRel]->relations.insert(newRel);
     for (auto attr : relationStats[oldRel]->attrDistinctsMap) {
         string newAttrName = newRel + "." + attr.first;
         relationStats[newRel]->attrDistinctsMap[newAttrName] = attr.second;
