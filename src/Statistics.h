@@ -32,6 +32,7 @@ class Statistics {
     void validateOperand(struct Operand *op, vector<string> relations);
     void evaluateAndList(struct AndList *parseTree, vector<string> relations);
     void evaluateOrList(struct OrList *parseTree, vector<string> relations);
+    char * getRelationName(string attrName, vector<string> relations);
     vector<ComparisonOp *> flattenOrExpressionsTree(struct OrList *parseTree);
     int processORWithLitValues(vector<ComparisonOp *> expressions,
                                vector<string> relations, double &numTuplesOR);

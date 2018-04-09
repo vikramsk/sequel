@@ -56,10 +56,10 @@ void Statistics::AddRel(char *relName, int numTuples) {
         relationStats[rel]->relations.insert(rel);
         relationStats[rel]->numTuples = numTuples;
     } else {
-        if (relationStats[rel]->relations.size() > 1) {
-            cerr << "invalid update query" << endl;
-            exit(1);
-        }
+        // if (relationStats[rel]->relations.size() > 1) {
+        //     cerr << "invalid update query" << endl;
+        //     exit(1);
+        // }
         relationStats[rel]->numTuples = numTuples;
     }
 }
@@ -301,13 +301,17 @@ double Statistics::Estimate(struct AndList *parseTree, char **relNames,
     Statistics relJoin(*this);
     relJoin.Apply(parseTree, relNames, numToJoin);
     // Look up any relName for numTuples
-    string key;
+    string attr;
     if (parseTree->left->left->left->code == NAME) {
-        key = getString(parseTree->left->left->left->value);
+        attr = getString(parseTree->left->left->left->value);
     } else {
-        key = getString(parseTree->left->left->right->value);
+        attr = getString(parseTree->left->left->right->value);
     }
-    return relJoin.relationStats[key]->numTuples;
+    int dummy;
+    string temp;
+    double numTuples;
+    relJoin.loadAttributeInfo(attr, getStrings(relNames, numToJoin), temp, numTuples, dummy);
+    return numTuples;
 }
 
 void Statistics::evaluateAndList(struct AndList *parseTree,
@@ -340,10 +344,23 @@ void Statistics::evaluateOrList(struct OrList *parseTree,
     }
 
     // AND remaining predicates
-    evaluateANDofOR(orExpressions, relations, stateIndex, numTuplesAND);
+    if((stateIndex + 1) != orExpressions.size()) {
+        evaluateANDofOR(orExpressions, relations, stateIndex, numTuplesAND);
+    }
+    
     char *mergingOperand = orExpressions[stateIndex]->left->value;
-    AddRel(mergingOperand,
-           numTuplesOR - numTuplesAND);  // update num tuples value
+    char *rel = getRelationName(getString(mergingOperand),relations);
+    AddRel(rel,numTuplesOR - numTuplesAND);  // update num tuples value
+}
+
+char * Statistics::getRelationName(string attrName, vector<string> relations) {
+    int dummy;
+    double temp;
+    string relName;
+    loadAttributeInfo(attrName, relations, relName, temp, dummy);
+    char *rel = new char[relName.length()+1]; 
+    strcpy(rel, relName.c_str()); 
+    return rel;
 }
 
 vector<ComparisonOp *> Statistics::flattenOrExpressionsTree(
@@ -428,7 +445,8 @@ int Statistics::processORWithLitValues(vector<ComparisonOp *> orExpressions,
             sameOperandTuples +=
                 getStatsForState(stats, orExpressions[i++], relations);
         }
-        AddRel(prevOperand, sameOperandTuples);  // update num tuples value
+        char *rel = getRelationName(getString(prevOperand),relations);
+        AddRel(rel, sameOperandTuples);  // update num tuples value
         numTuplesOR += sameOperandTuples;
     }
 
