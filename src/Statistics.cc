@@ -348,14 +348,13 @@ void Statistics::evaluateOrList(struct OrList *parseTree,
         numTuplesOR += getStatsForState(stats, orExpressions[index], relations);
     }
 
-    // AND remaining predicates
-    if (orExpressions.size() != 1) {
-        evaluateANDofOR(orExpressions, relations, stateIndex, numTuplesAND);
-    }
+    // AND remaining predicates and update state
+    evaluateANDofOR(orExpressions, relations, stateIndex, numTuplesAND);
 
     char *mergingOperand = orExpressions[stateIndex]->left->value;
     char *rel = getRelationName(getString(mergingOperand), relations);
-    AddRel(rel, numTuplesOR - numTuplesAND);  // update num tuples value
+    if (orExpressions.size() != 1) numTuplesOR -= numTuplesAND;
+    AddRel(rel, numTuplesOR);  // update num tuples value
 }
 
 char *Statistics::getRelationName(string attrName, vector<string> relations) {
