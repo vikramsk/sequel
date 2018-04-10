@@ -1,30 +1,30 @@
 #include <cpptoml.h>
 #include "gtest/gtest.h"
+#include "testsuite.h"
 
-class Config {
-    const struct Constants {
-        const char* ConfigFile = "config.toml";
-        const char* Catalog = "test.path";
-        const char* Data = "test.data";
-        const char* Build = "test.build";
-    } constants;
+char *relation::tpch_dir = "";
+char *relation::catalog_path = "";
+char *relation::dbfile_dir = "";
 
-   public:
-    Config();
-};
+void parseConfig() {
+    auto config = cpptoml::parse_file("config.toml");
 
-int main(int argc, char** argv) {
-    Config conf;
+    auto entry = config->get_as<string>("data");
 
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+    relation::tpch_dir = new char[entry->length() + 1];
+    strcpy(relation::tpch_dir, entry->c_str());
+
+    entry = config->get_as<string>("catalog");
+    relation::catalog_path = new char[entry->length() + 1];
+    strcpy(relation::catalog_path, entry->c_str());
+
+    entry = config->get_as<string>("dbfiles");
+    relation::dbfile_dir = new char[entry->length() + 1];
+    strcpy(relation::dbfile_dir, entry->c_str());
 }
 
-Config::Config() {
-    auto config = cpptoml::parse_file(constants.ConfigFile);
-    auto filePath = config->get_as<std::string>(constants.Catalog);
-    int nameLength = filePath->length();
-
-    char fileName[nameLength + 1];
-    strcpy(fileName, filePath->c_str());
+int main(int argc, char **argv) {
+    parseConfig();
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
