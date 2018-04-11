@@ -205,7 +205,6 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     Page buffer;
     int appendResult = 0;
     Record *temp = new Record();
-    Schema mySchema("data/catalog", "lineitem");
     while (in->Remove(&rec)) {
         if (pagesLeft <= 0) {
             // sort the current records in singleRun
