@@ -1,8 +1,8 @@
 #ifndef REL_OP_H
 #define REL_OP_H
 
-#include <future>
 #include <string>
+#include <thread>
 #include "DBFile.h"
 #include "Function.h"
 #include "Pipe.h"

@@ -361,54 +361,6 @@ void q8() {
     cout << " TBA\n";
 }
 
-void q9() {
-    cout << " query9 \n";
-    char *pred_s = "(s_suppkey = s_suppkey)";
-    init_SF_s(pred_s, 100);
-    SF_s.Run(dbf_s, _s, cnf_s, lit_s);  // 10k recs qualified
-
-    char *pred_ps = "(ps_suppkey = ps_suppkey)";
-    init_SF_ps(pred_ps, 100);
-
-    Join J;
-    // left _s
-    // right _ps
-    Pipe _s_ps(pipesz);
-    CNF cnf_p_ps;
-    Record lit_p_ps;
-    get_cnf("(s_suppkey < 11) AND (ps_suppkey < 101)", s->schema(),
-            ps->schema(), cnf_p_ps, lit_p_ps);
-
-    int outAtts = sAtts + psAtts;
-    Attribute ps_supplycost = {"ps_supplycost", Double};
-    Attribute joinatt[] = {
-        IA, SA, SA, IA, SA, DA, SA, IA, IA, IA, ps_supplycost, SA};
-    Schema join_sch("join_sch", outAtts, joinatt);
-
-    Sum T;
-    // _s (input pipe)
-    Pipe _out(1);
-    Function func;
-    char *str_sum = "(ps_supplycost)";
-    get_cnf(str_sum, &join_sch, func);
-    func.Print();
-    T.Use_n_Pages(1);
-
-    SF_ps.Run(dbf_ps, _ps, cnf_ps, lit_ps);  // 161 recs qualified
-    J.Run(_s, _ps, _s_ps, cnf_p_ps, lit_p_ps);
-    // T.Run(_s_ps, _out, func);
-
-    SF_ps.WaitUntilDone();
-    cout << clear_pipe(_s_ps, &join_sch, false);
-    J.WaitUntilDone();
-
-    // T.WaitUntilDone();
-
-    // Schema sum_sch("sum_sch", 1, &DA);
-    // int cnt = clear_pipe(_out, &sum_sch, true);
-    // cout << " query4 returned " << cnt << " recs \n";
-}
-
 void parseConfig() {
     auto config = cpptoml::parse_file("config.toml");
 
@@ -429,15 +381,15 @@ void parseConfig() {
 int main(int argc, char *argv[]) {
     parseConfig();
     if (argc != 2) {
-        cerr << " Usage: ./test.out [1-8] \n";
+        cerr << " Usage: ./test3.out [1-8] \n";
         exit(0);
     }
 
-    void (*query_ptr[])() = {&q1, &q2, &q3, &q4, &q5, &q6, &q7, &q8, &q9};
+    void (*query_ptr[])() = {&q1, &q2, &q3, &q4, &q5, &q6, &q7, &q8};
     void (*query)();
     int qindx = atoi(argv[1]);
 
-    if (qindx > 0 && qindx < 10) {
+    if (qindx > 0 && qindx < 9) {
         setup(catalog_path, dbfile_dir, tpch_dir);
         query = query_ptr[qindx - 1];
         query();
