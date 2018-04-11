@@ -121,30 +121,41 @@ TEST(SortedFileTest, Load) {
     delete rel_ptr;
 }
 
-// TEST(SortedFileTest, CompareSortedLists) {
-//    relation *rel_ptr = new relation(strdup(partsupp), relation::dbfile_dir);
-//    char *cnf = "(l_orderkey)";
-//    yy_scan_string(cnf);
-//    OrderMaker om;
-//    rel_ptr->get_sort_order(om);
-//
-//    DBFile dbfile1;
-//    DBFile dbfile2;
-//    dbfile1.Open("build/dbfiles/partsupp1.bin");
-//    dbfile2.Open("build/dbfiles/partsupp2.bin");
-//    dbfile1.MoveFirst();
-//    dbfile2.MoveFirst();
-//
-//    ComparisonEngine comp;
-//    Record rec1, rec2;
-//    int cnt = 0;
-//    while (dbfile1.GetNext(rec1) && dbfile2.GetNext(rec2)) {
-//        if (comp.Compare(&rec1, &rec2, &om) == 0) {
-//            cnt++;
-//        }
-//    }
-//    cout << "\n query returned " << cnt << " recs\n";
-//    dbfile1.Close();
-//    dbfile2.Close();
-//    delete rel_ptr;
-//}
+TEST(SortedFileTest, CompareSortedLists) {
+   relation *rel_ptr = new relation(strdup(partsupp), relation::dbfile_dir);
+   char *cnf = "(ps_suppkey)";
+   yy_scan_string(cnf);
+   OrderMaker om;
+   rel_ptr->get_sort_order(om);
+
+   int runlen = 2;
+    struct {
+        OrderMaker *o;
+        int l;
+    } startup = {&om, runlen};
+
+    DBFile dbfile1;
+    DBFile dbfile2;
+    dbfile1.Create("build/tests/partsupp1.bin", sorted, &startup);
+    dbfile2.Create("build/tests/partsupp2.bin", sorted, &startup);
+
+    char tbl_path[100];  // construct path of the tpch flat text file
+    sprintf(tbl_path, "%s%s.tbl", "data/10M/", rel_ptr->name());
+    dbfile1.Load(*(rel_ptr->schema()), tbl_path);
+    dbfile2.Load(*(rel_ptr->schema()), tbl_path);
+
+   dbfile1.Open("build/tests/partsupp1.bin");
+   dbfile2.Open("build/tests/partsupp2.bin");
+   dbfile1.MoveFirst();
+   dbfile2.MoveFirst();
+
+   ComparisonEngine comp;
+   Record rec1, rec2;
+   int cnt = 0;
+   while (dbfile1.GetNext(rec1) && dbfile2.GetNext(rec2)) {
+       ASSERT_EQ(comp.Compare(&rec1, &rec2, &om),0);
+   }
+   dbfile1.Close();
+   dbfile2.Close();
+   delete rel_ptr;
+}
