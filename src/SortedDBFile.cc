@@ -263,14 +263,14 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
     } else {  // Else there are candidate records in the buffer
         status = buffer.GetFirst(&fetchme);
     }
-    return getFirstValidRecord(status,fetchme,cnf,literal,queryOrder,queryLiteralOrder);
+    return getFirstValidRecord(status,fetchme,cnf,literal);
 }
 
-int SortedDBFile::getFirstValidRecord(int status, Record &fetchme, CNF &cnf, Record &literal, OrderMaker *qOrder, OrderMaker *qlOrder) {
+int SortedDBFile::getFirstValidRecord(int &status, Record &fetchme, CNF &cnf, Record &literal) {
     ComparisonEngine comp;
     // Find first record in the buffer that satisfies queryOrder
-    while (status && comp.Compare(&fetchme, qOrder, &literal,
-                                  qlOrder) == -1) {
+    while (status && comp.Compare(&fetchme, queryOrder, &literal,
+                                  queryLiteralOrder) == -1) {
         status = buffer.GetFirst(&fetchme);
     }
     if (!status) {  // Boundary condition: very first match found as the first
@@ -279,7 +279,7 @@ int SortedDBFile::getFirstValidRecord(int status, Record &fetchme, CNF &cnf, Rec
         dataFile.GetPage(&buffer, ++pageIndex);
         status = buffer.GetFirst(&fetchme);
     }
-    while (comp.Compare(&fetchme, qOrder, &literal, qlOrder) ==
+    while (comp.Compare(&fetchme, queryOrder, &literal, queryLiteralOrder) ==
            0) {
         if (comp.Compare(&fetchme, &literal, &cnf)) {
             return 1;

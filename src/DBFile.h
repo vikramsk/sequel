@@ -73,7 +73,7 @@ class SortedDBFile : public virtual GenericDBFile {
 
     void flushBuffer();
     void mergeRecords();
-    int getFirstValidRecord(int status, Record &fetchme, CNF &cnf, Record &literal, OrderMaker *qOrder, OrderMaker *qlOrder);
+    int getFirstValidRecord(int &status, Record &fetchme, CNF &cnf, Record &literal);
     int getEqualToLiteral(Record &fetchme, CNF &cnf, Record &literal);
     off_t binarySearch(off_t start, off_t end, Record &literal);
     void readMetaFile(const char *f_path);
