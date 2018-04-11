@@ -17,6 +17,7 @@ SortedDBFile::SortedDBFile(const char *f_path) : filePath(f_path) {
     inPipe = new Pipe(100);
     outPipe = new Pipe(100);
     bigQ = NULL;
+    mode = READ;
 }
 
 typedef struct SortInfo {
@@ -108,8 +109,6 @@ void SortedDBFile::flushBuffer() {
     if (bigQ) {
         inPipe->ShutDown();
         mergeRecords();
-        free(bigQ);
-        bigQ = NULL;
     }
     if (queryOrder) {
         free(queryOrder);
@@ -159,7 +158,10 @@ void SortedDBFile::mergeRecords() {
 
     newDataFile.AddPage(&newFilePage,
                         newPageIndex);  // write remaining records to file
+    
+    free(bigQ);
     newDataFile.Close();
+    Close();
     remove(filePath);
     rename(newFilePath, filePath);
     Open(filePath);
@@ -194,8 +196,7 @@ void SortedDBFile::MoveFirst() {
 }
 
 int SortedDBFile::Close() {
-    //if (mode == WRITE) 
-    flushBuffer();
+    if (mode == WRITE)  flushBuffer();
     dataFile.Close();
     return 1;
 }
