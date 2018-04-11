@@ -234,12 +234,8 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
         temp = new Record();
     }
     free(temp);
-
-    // sort the current records in singleRun
     sort(singleRun.begin(), singleRun.end(), SortHelper(sortOrder));
-    // update vector to track head of new run
     runHeads.push_back(currRunHead);
-    // write it out to file
     appendRunToFile(singleRun, runs, currRunHead);
     runs.Close();
 }
