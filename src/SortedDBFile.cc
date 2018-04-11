@@ -229,9 +229,7 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
         flushBuffer();
         MoveFirst();  // load first page into the buffer
     }
-
     int status = 0;
-
     if (!queryOrder) {
         queryOrder = new OrderMaker();
         queryLiteralOrder = new OrderMaker();
@@ -250,8 +248,7 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
                 buffer.EmptyItOut();
                 dataFile.GetPage(&buffer, pageIndex);
                 status = buffer.GetFirst(&fetchme);
-            } else {
-                    // handles the following cases:
+            } else {// handle the following cases:
                     // 1. (candidatePageIndex = pageIndex)
                     // 2. (candidatePageIndex = pageIndex = 0) with empty buffer
                     // 3. (candidatePageIndex = pageIndex - 1) 
@@ -266,23 +263,23 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
     } else {  // Else there are candidate records in the buffer
         status = buffer.GetFirst(&fetchme);
     }
+    return getFirstValidRecord(status,fetchme,cnf,literal,queryOrder,queryLiteralOrder);
+}
 
+int SortedDBFile::getFirstValidRecord(int status, Record &fetchme, CNF &cnf, Record &literal, OrderMaker *qOrder, OrderMaker *qlOrder) {
     ComparisonEngine comp;
-
     // Find first record in the buffer that satisfies queryOrder
-    while (status && comp.Compare(&fetchme, queryOrder, &literal,
-                                  queryLiteralOrder) == -1) {
+    while (status && comp.Compare(&fetchme, qOrder, &literal,
+                                  qlOrder) == -1) {
         status = buffer.GetFirst(&fetchme);
     }
-
     if (!status) {  // Boundary condition: very first match found as the first
                     // record of the next page
         if (dataFile.GetLength() <= pageIndex + 2) return 0;
         dataFile.GetPage(&buffer, ++pageIndex);
         status = buffer.GetFirst(&fetchme);
     }
-
-    while (comp.Compare(&fetchme, queryOrder, &literal, queryLiteralOrder) ==
+    while (comp.Compare(&fetchme, qOrder, &literal, qlOrder) ==
            0) {
         if (comp.Compare(&fetchme, &literal, &cnf)) {
             return 1;
@@ -294,7 +291,6 @@ int SortedDBFile::GetNext(Record &fetchme, CNF &cnf, Record &literal) {
             status = buffer.GetFirst(&fetchme);
         }
     }
-
     return 0;
 }
 
@@ -302,9 +298,9 @@ off_t SortedDBFile::binarySearch(off_t start, off_t end, Record &literal) {
     if (start > end) return -1;
     ComparisonEngine comp;
     while (start <= end) {
-        off_t mid = (start + end) / 2;
         Page tempBuffer;
         Record tempRec;
+        off_t mid = (start + end) / 2;
         dataFile.GetPage(&tempBuffer, mid);
         tempBuffer.GetFirst(&tempRec);
         if (comp.Compare(&tempRec, queryOrder, &literal, queryLiteralOrder) >=
