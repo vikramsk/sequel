@@ -30,7 +30,6 @@ TEST(SortedFileTest, CreateWorker) {
     }
     tot += proc;
     inputPipe.ShutDown();
-    // cout << "\n create finished.. " << tot << " recs inserted\n";
     ASSERT_EQ(0, fclose(tblfile));
 
     while (outputPipe.Remove(&temp)) {

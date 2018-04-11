@@ -197,13 +197,13 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
     tempFileName = new char[s.length()+1];
     strcpy(tempFileName, s.c_str()); 
     runs.Open(0, tempFileName);
-
-    int pagesLeft = runlen;
-    vector<Record *> singleRun;
-    off_t currRunHead = 0;
+    
     Record rec;
     Page buffer;
     int appendResult = 0;
+    off_t currRunHead = 0;
+    int pagesLeft = runlen;
+    vector<Record *> singleRun;
     Record *temp = new Record();
     while (in->Remove(&rec)) {
         if (pagesLeft <= 0) {
@@ -227,7 +227,6 @@ void BigQ::createRuns(Pipe *in, OrderMaker *sortOrder, int runlen) {
             buffer.Append(&rec);
         }
     }
-
     while (buffer.GetFirst(temp) != 0) {
         singleRun.push_back(temp);
         temp = new Record();

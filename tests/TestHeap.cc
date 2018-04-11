@@ -160,17 +160,6 @@ TEST(HeapFileTest, LoadRecordsToExisting) {
     dbfile.Close();
 }
 
-TEST(HeapFileTest, GetNextFromFirstRecord) { DBFile dbfile; }
-
-bool createDummyBinaryFile() {
-    DBFile dbfile;
-    // Schema dbfile.Load();
-}
-
-TEST(HeapFileTest, GetNextFromLastRecordInPage) {}
-
-TEST(HeapFileTest, GetNextFromLastRecord) {}
-
 TEST(HeapFileTest, GetNextFromEmptyFile) {
     DBFile dbf;
     Record rec;
