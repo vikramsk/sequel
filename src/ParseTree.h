@@ -17,6 +17,25 @@ static const int INT = 2;
 static const int STRING = 3;
 static const int NAME = 4;
 
+struct TableList {
+    // this is the original table name
+    char *tableName;
+
+    // this is the value it is aliased to
+    char *aliasAs;
+
+    // and this the next alias
+    struct TableList *next;
+};
+
+struct NameList {
+    // this is the name
+    char *name;
+
+    // and this is the next name in the list
+    struct NameList *next;
+};
+
 struct Operand {
     // this tells us the type of the operand: FLOAT, INT, STRING...
     int code;

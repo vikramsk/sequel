@@ -34,8 +34,8 @@ $(BUILD_DIR)/%.cc.o: %.cc
 
 all: main test.out test1.out test2.out test3.out testsuite
 
-main: $(OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/main.o
-	$(CC) $(CXXFLAGS) $(OBJS) build/src/main.o  build/src/y.tab.o build/src/lex.yy.o -o build/$@
+main: $(OBJS) build/src/ysql.tab.o build/src/lex.yysql.o build/src/main.o
+	$(CC) $(CXXFLAGS) $(OBJS) build/src/main.o  build/src/ysql.tab.o build/src/lex.yysql.o -o build/$@
 
 test.out: $(OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o build/src/test.o dbfolder
 	$(CC) $(CXXFLAGS) $(OBJS) build/src/test.o build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o -o build/test.out  -ll
@@ -64,6 +64,13 @@ build/src/test2.o: src/test2.cpp
 build/src/test3.o: src/test3.cpp
 	$(CC) -g -c src/test3.cpp -o $@
 
+build/src/ysql.tab.o: src/ParserSQL.y 
+	yacc -d src/ParserSQL.y -o build/src/ysql.tab.c
+	sed -i build/src/ysql.tab.h -e "/int yyparse (void);/d" || true # Hack for continuing execution on MAC
+	$(shell $(tag))
+	g++ -w -c -Isrc/ build/src/ysql.tab.c 
+	mv ysql.tab.o build/src/
+
 build/src/y.tab.o: src/Parser.y 
 	yacc -d src/Parser.y -o build/src/y.tab.c
 	sed -i build/src/y.tab.h -e "/int yyparse (void);/d" || true # Hack for continuing execution on MAC
@@ -82,6 +89,13 @@ build/src/lex.yyfunc.o: src/LexerFunc.l
 	mv lex.yyfunc.c build/src/
 	gcc -w -c -Isrc/ build/src/lex.yyfunc.c
 	mv lex.yyfunc.o build/src/
+
+build/src/lex.yysql.o: src/LexerSQL.l
+	lex  src/LexerSQL.l 
+	mv lex.yy.c lex.yysql.c
+	mv lex.yysql.c build/src/
+	gcc -w -c -Isrc/ build/src/lex.yysql.c
+	mv lex.yysql.o build/src/
 
 build/src/lex.yy.o: src/Lexer.l
 	lex  src/Lexer.l 
