@@ -1,7 +1,7 @@
 /***********************************************************************
  * SECTION 1
  ***********************************************************************/
-/* The code in %{ %} is included as it is in lex.yy.c file
+/* The code in %{ %} is included as it is in lex.yysql.c file
  * it has C global variables, prototypes, and comments 
  */
 
@@ -11,10 +11,10 @@
 #include <string.h> // For strdup()
 #include <stdlib.h> // For malloc()
 #include "ParseTree.h"
-#include "ysql.tab.h"
+#include "yysql.tab.h"
 
 int lineno = 1;
-void yyerror(char*s);
+void yysqlerror(char*s);
 
 %}
 
@@ -23,7 +23,7 @@ void yyerror(char*s);
  * SECTION 2
  ******************************************************************************/
 /* This is the DEFINITION section which contains substitutions, code, and
- * start stats; will be copied into lex.yy.c
+ * start stats; will be copied into lex.yysql.c
  */
 
 /******************************************************************************
@@ -75,28 +75,28 @@ void yyerror(char*s);
 
 ","    	        	return(',');
 
--?[0-9]+ 	       {yylval.actualChars = strdup(yytext);
+-?[0-9]+ 	       {yysqllval.actualChars = strdup(yysqltext);
   			return(Int); 
 		        }
 
--?[0-9]+\.[0-9]*       {yylval.actualChars = strdup(yytext); 
+-?[0-9]+\.[0-9]*       {yysqllval.actualChars = strdup(yysqltext); 
   			return(Float);
 			}
 
-[A-Za-z][A-Za-z0-9_-]* {yylval.actualChars = strdup(yytext);
+[A-Za-z][A-Za-z0-9_-]* {yysqllval.actualChars = strdup(yysqltext);
   			return(Name);
 			}     
 
-[A-Za-z][A-Za-z0-9_-]*\.[A-Za-z][A-Za-z0-9_-]* {yylval.actualChars = strdup(yytext);
+[A-Za-z][A-Za-z0-9_-]*\.[A-Za-z][A-Za-z0-9_-]* {yysqllval.actualChars = strdup(yysqltext);
   			return(Name);
 			}     
 
 \'[^'\n]*\'            {/* take care of ' in a string */
-                        if (yytext[yyleng - 2] == '\\') {
+                        if (yysqltext[yysqlleng - 2] == '\\') {
                                 yymore();
                         } else {
-                                yylval.actualChars = strdup(yytext + 1);
-                                yylval.actualChars[strlen(yylval.actualChars) - 1] = 0;
+                                yysqllval.actualChars = strdup(yysqltext + 1);
+                                yysqllval.actualChars[strlen(yysqllval.actualChars) - 1] = 0;
                                 return(String);
                         }
                         }
@@ -105,15 +105,15 @@ void yyerror(char*s);
 
 [ \t]             	;
 
-.                 	yyerror("LEX_ERROR: invalid character");
+.                 	yysqlerror("LEX_ERROR: invalid character");
 
 %%
 
-void yyerror(char *s) {
-  printf("%d: %s at %s\n", lineno, s, yytext);
+void yysqlerror(char *s) {
+  printf("%d: %s at %s\n", lineno, s, yysqltext);
 }
 
-int yywrap(void){
+int yysqlwrap(void){
   return 1;
 }
 
