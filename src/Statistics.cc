@@ -234,6 +234,8 @@ double Statistics::applyPredicate(struct ComparisonOp *cnf,
         loadAttributeInfo(rAttr, relations, rRel, rTuples, rDistincts);
 
     // assuming only one operand is an attribute.
+    // TODO: compute the scenario for both operands
+    // being an attribute as (tuples1*distincts2)/3 ?
     if (cnf->code != EQUALS) {
         if (cnf->left->code == NAME)
             resultTuples = lTuples / 3.0;
