@@ -14,8 +14,8 @@ class Node {
     opType operation;
     CNF *cnf;
     Pipe *outPipe;
-    Pipe *inPipe1;
-    Pipe *inPipe2;
+    Pipe *inPipeL;
+    Pipe *inPipeR;
 
     Node();
     ~Node();
@@ -49,6 +49,7 @@ class QueryTokens {
 class QueryPlanner {
    private:
     Statistics stats;
+    Node *root;
     unordered_map<string, Node *> relationNode;
     QueryTokens &tokens;
 
