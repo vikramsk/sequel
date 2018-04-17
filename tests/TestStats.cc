@@ -73,7 +73,8 @@ TEST(StatisticalEstimationTest, ORingMultiplePredicates) {
     // Join the first two relations in relName
     s_1.Apply(final, relName, 2);
 
-    cnf = "(c_nationkey = n_nationkey) AND (n_nationkey < 10 OR n_nationkey = 15 OR n_nationkey = 20)";
+    // Note that selection has be performed before join for correct results
+    cnf = "(n_nationkey < 10 OR n_nationkey = 15 OR n_nationkey = 20) AND (c_nationkey = n_nationkey)";
     yy_scan_string(cnf);
     yyparse();
 
@@ -91,12 +92,13 @@ TEST(StatisticalEstimationTest, ORingMultiplePredicates) {
     s_2.AddRel(relName[2], 25);
     s_2.AddAtt(relName[2], "n_nationkey", 25);
 
-    cnf = "(n_nationkey < 10 OR n_nationkey = 15 OR n_nationkey = 20) AND (c_nationkey = n_nationkey) AND (o_custkey = 10 OR c_custkey = 20)";
+    // Note that order of selection operations don't matter
+    cnf = "(n_nationkey < 10 OR n_nationkey = 15 OR n_nationkey = 20) AND (o_custkey = 10 OR c_custkey = 20) AND (c_nationkey = n_nationkey)";
     yy_scan_string(cnf);
     yyparse();
 
     double result_2 = s_2.Estimate(final, relName, 3);
-    ASSERT_LE(fabs(result_2 - result_1),0.1);
+    ASSERT_EQ(result_1,result_2);
 }
 
 TEST(StatisticalEstimationTest, ORPlusJoinPredicates) {
@@ -120,7 +122,7 @@ TEST(StatisticalEstimationTest, ORPlusJoinPredicates) {
     // Join the first two relations in relName
     s_1.Apply(final, relName, 2);
 
-    cnf = "(c_nationkey = n_nationkey) AND (n_nationkey < 10 OR n_nationkey = 15)";
+    cnf = "(c_nationkey = n_nationkey)";
     yy_scan_string(cnf);
     yyparse();
 
@@ -138,7 +140,8 @@ TEST(StatisticalEstimationTest, ORPlusJoinPredicates) {
     s_2.AddRel(relName[2], 25);
     s_2.AddAtt(relName[2], "n_nationkey", 25);
 
-    cnf = "(n_nationkey < 10 OR n_nationkey = 15) AND (c_nationkey = n_nationkey) AND (c_custkey = o_custkey) AND (o_custkey = 10 OR c_custkey = 20)";
+    // Note that selection has be performed before join for correct results 
+    cnf = "(o_custkey = 10 OR c_custkey = 20) AND (c_nationkey = n_nationkey) AND (c_custkey = o_custkey)";
     yy_scan_string(cnf);
     yyparse();
 
