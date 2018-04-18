@@ -9,8 +9,14 @@ using namespace std;
 
 typedef enum { JOIN, SELFILE, SELPIPE, PROJECT, SUM, GROUPBY, DISTINCT } opType;
 
+class RelOrPair {
+    unordered_set<string> relations;
+    vector<OrList *> clauses;
+};
+
 class Node {
    private:
+    unordered_set<string> relations;
     opType operation;
     CNF *cnf;
     Pipe *outPipe;
@@ -32,6 +38,7 @@ class QueryTokens {
     AndList *andList;
     NameList *groupingAtts;
     NameList *attsToSelect;
+    map<string, vector<RelOrPair *>> relClauses;
 
    public:
     QueryTokens(FuncOperator *fo, TableList *t, AndList *al, NameList *ga,

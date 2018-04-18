@@ -26,8 +26,11 @@ extern struct NameList *attsToSelect;
 extern struct NameList *attsToCreate;
 
 int main() {
-    yysqlparse();
-    QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect);
-    QueryPlanner qp(qt);
-    qp.Create();
+    while (true) {
+        yysqlparse();
+        QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
+                       attsToSelect);
+        QueryPlanner qp(qt);
+        qp.Create();
+    }
 }
