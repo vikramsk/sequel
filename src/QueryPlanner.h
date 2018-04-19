@@ -38,16 +38,28 @@ class QueryTokens {
     AndList *andList;
     NameList *groupingAtts;
     NameList *attsToSelect;
-    map<string, vector<RelOrPair *>> relClauses;
+    bool distinctNoAgg;
+    bool distinctWithAgg;
+    unordered_map<string, vector<RelOrPair *>> relClauses;
 
    public:
     QueryTokens(FuncOperator *fo, TableList *t, AndList *al, NameList *ga,
-                NameList *ats) {
+                NameList *ats, int &distinctAtts, int &distinctFunc) {
         aggFunction = fo;
         tables = t;
         andList = al;
         groupingAtts = ga;
         attsToSelect = ats;
+        // 1 if there is a DISTINCT in a non-aggregate query 
+        if (distinctAtts == 1) {
+            distinctNoAgg = true;
+            distinctWithAgg = false;
+        } else { 
+            distinctNoAgg = false;
+            // 1 if there is a DISTINCT in an aggregate query
+            if (distinctFunc == 0) distinctWithAgg = false;
+            else distinctWithAgg = true;
+        }
     }
 
     friend class QueryPlanner;

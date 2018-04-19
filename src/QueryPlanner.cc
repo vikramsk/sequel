@@ -25,4 +25,17 @@ void QueryPlanner::initializeStats() {}
 
 void QueryPlanner::processAndList() {}
 
-void QueryPlanner::processAggFuncs() {}
+void QueryPlanner::processAggFuncs() {
+
+// If distinctAtts = 1, Group By > Project > Distinct
+// If distinctFunc = 0, 
+// 	If finalFunction != null // Aggregate
+// 		(Group By + Sum) > Project
+// 	Else
+// 		Group By > Project
+// If distinctFunc = 1,
+// 	If there isn't a Group By
+// 		Project > Distinct > Sum
+// 	Else
+// (Group By + Sum + Distinct?) > Project //EXTRA
+}
