@@ -6,8 +6,6 @@
 #include "Pipe.h"
 #include "Statistics.h"
 
-using namespace std;
-
 typedef enum { JOIN, SELFILE, SELPIPE, PROJECT, SUM, GROUPBY, DISTINCT } opType;
 
 class RelOrPair {
@@ -82,6 +80,10 @@ class QueryPlanner {
     void initializeStats();
     void processAndList();
     void processAggFuncs();
+    void createProjectNode();
+    void createGroupByNode();
+    void createSumNode();
+    void createDupRemovalNode();
 
    public:
     QueryPlanner(QueryTokens &qt) : tokens(qt) {}
