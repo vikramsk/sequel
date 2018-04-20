@@ -44,17 +44,35 @@ void QueryPlanner::initializeStats() {
 void QueryPlanner::processAndList() { tokens.createRelOrPairs(); }
 
 void QueryPlanner::processAggFuncs() {
-    // If distinctAtts = 1, Group By > Project > Distinct
-    // If distinctFunc = 0,
-    // 	If finalFunction != null // Aggregate
-    // 		(Group By + Sum) > Project
-    // 	Else
-    // 		Group By > Project
-    // If distinctFunc = 1,
-    // 	If there isn't a Group By
-    // 		Project > Distinct > Sum
-    // 	Else
-    // (Group By + Sum + Distinct?) > Project //EXTRA
+    if (tokens.distinctNoAgg) {
+        if (tokens.groupingAtts) {
+            cerr << "group by without aggregate function is not supported by this database (yet)" << endl;
+            exit(1);
+        } else {
+            createProjectNode();
+            createDupRemovalNode();
+        }
+    } else {
+        if (tokens.distinctWithAgg) {
+            if (tokens.groupingAtts) {
+                cerr << "group by with distinct sum function is not supported by this database (yet)" << endl;
+                exit(1);
+            } else {
+                createProjectNode();
+                createDupRemovalNode();
+                createSumNode();
+            }
+        } else {
+            if (tokens.groupingAtts) {
+                if (tokens.aggFunction) createGroupByNode();
+                else {
+                    cerr << "group by without aggregate function is not supported by this database (yet)" << endl;
+                    exit(1);
+                }
+            }
+            createProjectNode();
+        }
+    }
 }
 
 vector<string> getRelations(struct ComparisonOp *cmpOp) {
