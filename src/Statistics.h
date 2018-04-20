@@ -58,6 +58,7 @@ class Statistics {
     void AddRel(char *relName, double numTuples);
     void AddAtt(char *relName, char *attName, int numDistincts);
     void CopyRel(char *oldName, char *newName);
+    void DeleteRel(char *relName);
 
     void Read(char *fromWhere);
     void Write(char *fromWhere);

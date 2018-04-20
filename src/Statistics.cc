@@ -52,6 +52,14 @@ void Statistics::AddRel(char *relName, double numTuples) {
     }
 }
 
+void Statistics::DeleteRel(char *relName) {
+    string rel = getString(relName);
+    if (relationStats.find(rel) == relationStats.end()) {
+        return;
+    }
+
+    relationStats.erase(rel);
+}
 void Statistics::AddAtt(char *relName, char *attName, int numDistincts) {
     string rel = getString(relName);
     string att = getString(attName);

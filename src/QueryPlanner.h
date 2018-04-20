@@ -1,3 +1,4 @@
+#include <list>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -10,8 +11,9 @@ using namespace std;
 typedef enum { JOIN, SELFILE, SELPIPE, PROJECT, SUM, GROUPBY, DISTINCT } opType;
 
 class RelOrPair {
+   public:
     unordered_set<string> relations;
-    vector<OrList *> clauses;
+    OrList *orList;
 };
 
 class Node {
@@ -41,6 +43,9 @@ class QueryTokens {
     bool distinctNoAgg;
     bool distinctWithAgg;
     unordered_map<string, vector<RelOrPair *>> relClauses;
+    list<RelOrPair *> relOrPairs;
+
+    void createRelOrPairs();
 
    public:
     QueryTokens(FuncOperator *fo, TableList *t, AndList *al, NameList *ga,
@@ -50,15 +55,17 @@ class QueryTokens {
         andList = al;
         groupingAtts = ga;
         attsToSelect = ats;
-        // 1 if there is a DISTINCT in a non-aggregate query 
+        // 1 if there is a DISTINCT in a non-aggregate query
         if (distinctAtts == 1) {
             distinctNoAgg = true;
             distinctWithAgg = false;
-        } else { 
+        } else {
             distinctNoAgg = false;
             // 1 if there is a DISTINCT in an aggregate query
-            if (distinctFunc == 0) distinctWithAgg = false;
-            else distinctWithAgg = true;
+            if (distinctFunc == 0)
+                distinctWithAgg = false;
+            else
+                distinctWithAgg = true;
         }
     }
 
