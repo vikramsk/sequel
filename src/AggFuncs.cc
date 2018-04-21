@@ -58,13 +58,48 @@ void QueryPlanner::setAttributesList(int &numAttsOut, int *attsToKeep, Schema *n
 void QueryPlanner::createGroupByNode() {
     Node newRoot(GROUPBY);
     newRoot.inPipeL = root->outPipe;
-    // newRoot.numAttsIn = root->outSchema->GetNumAtts();
-    // newRoot.attsToKeep = getAttributesList(newRoot.numAttsOut);
-    // if (newRoot.numAttsOut == 0) {
-    //     cerr << "output attributes are not specified in the query" << endl;
-    //     exit(1);
-    // }
+    newRoot.func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
+    setupGroupOrder(newRoot.outSchema);
+    newRoot.groupOrder = new OrderMaker(newRoot.outSchema);
     root = &newRoot;
+}
+
+void QueryPlanner::setupGroupOrder(Schema *newSchema) {
+    struct AttDetails {
+        int pos;
+        Attribute details;
+    };
+    
+    int numAttsOut = 0;
+    vector<AttDetails> finalAtts;
+    struct NameList *groupAttribute = tokens.groupingAtts;
+
+    while (groupAttribute) {
+        int position = root->outSchema->Find(groupAttribute->name);
+        if (position == -1) {
+            cerr << groupAttribute->name << " is an invalid attribute for grouping"
+                 << endl;
+            exit(1);
+        }
+        numAttsOut++;
+        AttDetails att;
+        att.pos = position;
+        att.details.name = strdup(groupAttribute->name);
+        att.details.myType = root->outSchema->FindType(groupAttribute->name);
+        finalAtts.push_back(att);
+        groupAttribute = groupAttribute->next;
+    }
+
+    sort(finalAtts.begin(), finalAtts.end(),
+        [](AttDetails att1, AttDetails att2) 
+        { return att1.pos - att2.pos; });
+    Attribute *attsList = new Attribute[numAttsOut+1];
+    attsList[0].name = "Sum";
+    attsList[0].myType = Double;
+    for (int i = 1; i <= numAttsOut; i++) {
+        attsList[i] = finalAtts[i].details;
+    }
+    newSchema = new Schema("out_schema",numAttsOut+1,attsList);    
 }
 
 void QueryPlanner::createSumNode() {}

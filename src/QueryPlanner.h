@@ -5,6 +5,7 @@
 #include "ParseTree.h"
 #include "Pipe.h"
 #include "Schema.h"
+#include "Function.h"
 #include "Statistics.h"
 
 typedef enum { JOIN, SELFILE, SELPIPE, PROJECT, SUM, GROUPBY, DISTINCT } opType;
@@ -25,8 +26,10 @@ class Node {
     int *attsToKeep;
 
     CNF cnf;
+    Function func;
     Record literal;
     Schema *outSchema;
+    OrderMaker *groupOrder;
 
     Pipe *outPipe;
     Pipe *inPipeL;
@@ -96,6 +99,7 @@ class QueryPlanner {
     void createSumNode();
     void createDupRemovalNode();
     void setAttributesList(int &numAttsOut, int *attsToKeep, Schema *newSchema);
+    void setupGroupOrder(Schema *newSchema);
 
    public:
     QueryPlanner(QueryTokens &qt) : tokens(qt) {}
