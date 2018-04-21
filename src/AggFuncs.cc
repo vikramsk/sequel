@@ -93,15 +93,23 @@ void QueryPlanner::setupGroupOrder(Schema *newSchema) {
     sort(finalAtts.begin(), finalAtts.end(),
         [](AttDetails att1, AttDetails att2) 
         { return att1.pos - att2.pos; });
-    Attribute *attsList = new Attribute[numAttsOut+1];
-    attsList[0].name = "Sum";
-    attsList[0].myType = Double;
-    for (int i = 1; i <= numAttsOut; i++) {
-        attsList[i] = finalAtts[i].details;
+    Attribute attsList[numAttsOut+1];
+    attsList[0] = {"GroupSum", Double};
+    for (int i = 0; i < numAttsOut; i++) {
+        attsList[i+1] = finalAtts[i].details;
     }
     newSchema = new Schema("out_schema",numAttsOut+1,attsList);    
 }
 
-void QueryPlanner::createSumNode() {}
+void QueryPlanner::createSumNode() {
+    Node newRoot(SUM);
+    newRoot.inPipeL = root->outPipe;
+    newRoot.func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
+    Attribute attsList[1] = {{"Sum", Double}};
+    newRoot.outSchema = new Schema("out_schema",1,attsList);
+    root = &newRoot;
+}
 
-void QueryPlanner::createDupRemovalNode() {}
+void QueryPlanner::createDupRemovalNode() {
+
+}
