@@ -92,6 +92,9 @@ void QueryPlanner::Create() {
 
     if (tokens.andList) processAndList(relAliasMap);
 
+    for (auto r : relationNode) {
+        r.second->cnf.Print();
+    }
     if (tokens.aggFunction) processAggFuncs();
 }
 
@@ -123,7 +126,9 @@ unordered_map<string, string> QueryPlanner::initializeStats() {
     TableList *tblPtr = tokens.tables;
     unordered_set<string> relList;
     unordered_map<string, string> relAliasMap;
-    while (tblPtr) {
+    while (tblPtr != NULL) {
+        if (tblPtr == NULL) cout << "Woot" << endl;
+
         stats.CopyRel(tblPtr->tableName, tblPtr->aliasAs);
         string tblAlias(tblPtr->aliasAs);
         relAliasMap[tblAlias] = string(tblPtr->tableName);
@@ -131,6 +136,7 @@ unordered_map<string, string> QueryPlanner::initializeStats() {
         // this loads the key in the map.
         tokens.relClauses[tblAlias];
         stats.DeleteRel(tblPtr->tableName);
+
         tblPtr = tblPtr->next;
     }
 
@@ -139,13 +145,28 @@ unordered_map<string, string> QueryPlanner::initializeStats() {
 
 void QueryPlanner::processAndList(unordered_map<string, string> relAliasMap) {
     tokens.createRelOrPairs();
+    cout << "reached" << endl;
     createSelectionNodes(relAliasMap);
 }
 
+struct orListComparator {
+    inline bool operator()(const OrList *or1, const OrList *or2) {
+        if (or1->rightOr) {
+            return false;
+        }
+        return true;
+    }
+};
+
 AndList *createAndList(vector<OrList *> orList) {
     if (!orList.size()) return NULL;
-
+    sort(orList.begin(), orList.end(), orListComparator());
     AndList *aList = new AndList();
+    AndList *aListPtr = aList;
+    for (auto &orl : orList) {
+        aListPtr->left = orl;
+        aListPtr = aListPtr->rightAnd;
+    }
     return aList;
 }
 
