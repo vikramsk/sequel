@@ -32,11 +32,18 @@ extern int distinctAtts;
 extern int distinctFunc;
 
 int main() {
-    while (true) {
-        yysqlparse();
-        QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
-                       attsToSelect, distinctAtts, distinctFunc);
-        QueryPlanner qp(qt);
-        qp.Create();
-    }
+    // while (true) {
+    //     yysqlparse();
+    //     QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
+    //                    attsToSelect, distinctAtts, distinctFunc);
+    //     QueryPlanner qp(qt);
+    //     qp.Create();
+    // }
+
+    yysqlparse();
+    QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
+                    attsToSelect, distinctAtts, distinctFunc);
+    QueryPlanner qp(qt);
+    qp.Create();
+    qp.Print();
 }

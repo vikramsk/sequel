@@ -35,7 +35,18 @@ void QueryPlanner::Create() {
     if (tokens.aggFunction) processAggFuncs();
 }
 
-void QueryPlanner::Print() {}
+void QueryPlanner::Print() {
+    Node *ptr = root;
+    recurseAndPrint(ptr);
+}
+
+void QueryPlanner::recurseAndPrint(Node *ptr) {
+    if (!ptr) {
+        recurseAndPrint(ptr->leftLink);
+        recurseAndPrint(ptr->rightLink);
+        ptr->Print();
+    }
+}
 
 // reads the table list and loads the stats
 // for the relations given in the table list.

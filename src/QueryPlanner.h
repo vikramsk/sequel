@@ -35,6 +35,9 @@ class Node {
     Pipe *inPipeL;
     Pipe *inPipeR;
 
+    Node *leftLink;
+    Node *rightLink;
+
     Node(opType opt)
         : operation(opt), inPipeL(NULL), inPipeR(NULL), outPipe(NULL) {}
     ~Node() {}
@@ -100,6 +103,7 @@ class QueryPlanner {
     void createDupRemovalNode();
     void setAttributesList(int &numAttsOut, int *attsToKeep, Schema *newSchema);
     void setupGroupOrder(Schema *newSchema);
+    void recurseAndPrint(Node *ptr);
 
    public:
     QueryPlanner(QueryTokens &qt) : tokens(qt) {}
