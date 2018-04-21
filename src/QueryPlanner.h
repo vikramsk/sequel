@@ -20,9 +20,9 @@ class Node {
     unordered_set<string> relations;
     opType operation;
 
-    int *attsToKeep;
     int numAttsIn;
     int numAttsOut;
+    int *attsToKeep;
 
     CNF cnf;
     Record literal;
@@ -95,7 +95,7 @@ class QueryPlanner {
     void createGroupByNode();
     void createSumNode();
     void createDupRemovalNode();
-    int *getAttributesList(int &numAttsOut);
+    void setAttributesList(int &numAttsOut, int *attsToKeep, Schema *newSchema);
 
    public:
     QueryPlanner(QueryTokens &qt) : tokens(qt) {}

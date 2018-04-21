@@ -11,6 +11,7 @@
 
 struct Attribute {
 
+	int pos;
 	char *name;
 	Type myType;
 };

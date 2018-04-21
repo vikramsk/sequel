@@ -1,13 +1,16 @@
 #include <iostream>
-#include <string>
+#include <algorithm>
 #include "ParseTree.h"
 #include "QueryPlanner.h"
+#include "Schema.h"
+#include "stdlib.h"
+#include "string.h"
 
 void QueryPlanner::createProjectNode() {
     Node newRoot(PROJECT);
     newRoot.inPipeL = root->outPipe;
     newRoot.numAttsIn = root->outSchema->GetNumAtts();
-    newRoot.attsToKeep = getAttributesList(newRoot.numAttsOut);
+    setAttributesList(newRoot.numAttsOut, newRoot.attsToKeep, newRoot.outSchema);
     if (newRoot.numAttsOut == 0) {
         cerr << "output attributes are not specified in the query" << endl;
         exit(1);
@@ -15,27 +18,46 @@ void QueryPlanner::createProjectNode() {
     root = &newRoot;
 }
 
-int *QueryPlanner::getAttributesList(int &numAttsOut) {
+void QueryPlanner::setAttributesList(int &numAttsOut, int *attsToKeep, Schema *newSchema) {
     numAttsOut = 0;
-    vector<int> finalAtts;
+    vector<Attribute> finalAtts;
     struct NameList *selAttribute = tokens.attsToSelect;
 
     while (selAttribute) {
-        int pos = root->outSchema->Find(selAttribute->name);
-        if (pos == -1) {
+        int position = root->outSchema->Find(selAttribute->name);
+        if (position == -1) {
             cerr << selAttribute->name << " is an invalid output attribute"
                  << endl;
             exit(1);
         }
         numAttsOut++;
-        finalAtts.push_back(pos);
+        Attribute att;
+        att.pos = position;
+        att.name = strdup(selAttribute->name);
+        att.myType = root->outSchema->FindType(selAttribute->name);
+        finalAtts.push_back(att);
         selAttribute = selAttribute->next;
     }
 
-    return finalAtts.data();
+    sort(finalAtts.begin(), finalAtts.end(),
+         [](Attribute att1, Attribute att2) { return att1.pos - att2.pos; });
+    attsToKeep = new int[numAttsOut];
+    for (int i = 0; i < numAttsOut; i++)
+        attsToKeep[i] = finalAtts[i].pos;
+    newSchema = new Schema("out_schema",numAttsOut,finalAtts.data());    
 }
 
-void QueryPlanner::createGroupByNode() {}
+void QueryPlanner::createGroupByNode() {
+    Node newRoot(GROUPBY);
+    newRoot.inPipeL = root->outPipe;
+    // newRoot.numAttsIn = root->outSchema->GetNumAtts();
+    // newRoot.attsToKeep = getAttributesList(newRoot.numAttsOut);
+    // if (newRoot.numAttsOut == 0) {
+    //     cerr << "output attributes are not specified in the query" << endl;
+    //     exit(1);
+    // }
+    root = &newRoot;
+}
 
 void QueryPlanner::createSumNode() {}
 
