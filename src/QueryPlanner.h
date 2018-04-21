@@ -34,7 +34,7 @@ class Node {
 
     Node(opType opt)
         : operation(opt), inPipeL(NULL), inPipeR(NULL), outPipe(NULL) {}
-    ~Node();
+    ~Node() {}
 
     void Print();
 
