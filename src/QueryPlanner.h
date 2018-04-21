@@ -42,7 +42,7 @@ class Node {
         : operation(opt), inPipeL(NULL), inPipeR(NULL), outPipe(NULL) {}
     ~Node() {}
 
-    void Print();
+    void Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID);
 
     friend class QueryPlanner;
 };
@@ -103,7 +103,7 @@ class QueryPlanner {
     void createDupRemovalNode();
     void setAttributesList(int &numAttsOut, int *attsToKeep, Schema *newSchema);
     void setupGroupOrder(Schema *newSchema);
-    void recurseAndPrint(Node *ptr);
+    int recurseAndPrint(Node *ptr,int &outPipe_ID);
 
    public:
     QueryPlanner(QueryTokens &qt) : tokens(qt) {}
