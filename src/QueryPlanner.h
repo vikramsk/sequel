@@ -4,8 +4,8 @@
 #include <unordered_set>
 #include "ParseTree.h"
 #include "Pipe.h"
-#include "Statistics.h"
 #include "Schema.h"
+#include "Statistics.h"
 
 typedef enum { JOIN, SELFILE, SELPIPE, PROJECT, SUM, GROUPBY, DISTINCT } opType;
 
@@ -19,17 +19,22 @@ class Node {
    private:
     unordered_set<string> relations;
     opType operation;
-    CNF *cnf;
+
     int *keepMe;
     int numAttsIn;
     int numAttsOut;
+
+    CNF cnf;
+    Record literal;
+    Schema *outSchema;
+
     Pipe *outPipe;
     Pipe *inPipeL;
     Pipe *inPipeR;
-    Schema *outSchema;
 
-    Node() {}
-    ~Node() {}
+    Node(opType opt)
+        : operation(opt), inPipeL(NULL), inPipeR(NULL), outPipe(NULL) {}
+    ~Node();
 
     void Print();
 
@@ -82,9 +87,10 @@ class QueryPlanner {
     unordered_map<string, Node *> relationNode;
     QueryTokens &tokens;
 
-    void initializeStats();
-    void processAndList();
+    unordered_map<string, string> initializeStats();
+    void processAndList(unordered_map<string, string> relAliasMap);
     void processAggFuncs();
+    void createSelectionNodes(unordered_map<string, string> relAliasMap);
     void createProjectNode();
     void createGroupByNode();
     void createSumNode();
