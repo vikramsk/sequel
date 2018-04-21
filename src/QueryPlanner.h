@@ -89,7 +89,7 @@ class QueryPlanner {
     void createGroupByNode();
     void createSumNode();
     void createDupRemovalNode();
-    int *getAttributesList();
+    int *getAttributesList(int &numAttsOut);
 
    public:
     QueryPlanner(QueryTokens &qt) : tokens(qt) {}
