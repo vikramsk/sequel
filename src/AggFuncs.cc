@@ -3,7 +3,6 @@
 #include "ParseTree.h"
 #include "QueryPlanner.h"
 #include "Schema.h"
-#include "stdlib.h"
 #include "string.h"
 
 void QueryPlanner::createProjectNode() {
@@ -19,8 +18,13 @@ void QueryPlanner::createProjectNode() {
 }
 
 void QueryPlanner::setAttributesList(int &numAttsOut, int *attsToKeep, Schema *newSchema) {
+    struct AttDetails {
+        int pos;
+        Attribute details;
+    };
+    
     numAttsOut = 0;
-    vector<Attribute> finalAtts;
+    vector<AttDetails> finalAtts;
     struct NameList *selAttribute = tokens.attsToSelect;
 
     while (selAttribute) {
@@ -31,20 +35,24 @@ void QueryPlanner::setAttributesList(int &numAttsOut, int *attsToKeep, Schema *n
             exit(1);
         }
         numAttsOut++;
-        Attribute att;
+        AttDetails att;
         att.pos = position;
-        att.name = strdup(selAttribute->name);
-        att.myType = root->outSchema->FindType(selAttribute->name);
+        att.details.name = strdup(selAttribute->name);
+        att.details.myType = root->outSchema->FindType(selAttribute->name);
         finalAtts.push_back(att);
         selAttribute = selAttribute->next;
     }
 
     sort(finalAtts.begin(), finalAtts.end(),
-         [](Attribute att1, Attribute att2) { return att1.pos - att2.pos; });
+        [](AttDetails att1, AttDetails att2) 
+        { return att1.pos - att2.pos; });
     attsToKeep = new int[numAttsOut];
-    for (int i = 0; i < numAttsOut; i++)
+    Attribute *attsList = new Attribute[numAttsOut];
+    for (int i = 0; i < numAttsOut; i++) {
         attsToKeep[i] = finalAtts[i].pos;
-    newSchema = new Schema("out_schema",numAttsOut,finalAtts.data());    
+        attsList[i] = finalAtts[i].details;
+    }
+    newSchema = new Schema("out_schema",numAttsOut,attsList);    
 }
 
 void QueryPlanner::createGroupByNode() {
