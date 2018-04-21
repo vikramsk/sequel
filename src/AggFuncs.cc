@@ -111,5 +111,8 @@ void QueryPlanner::createSumNode() {
 }
 
 void QueryPlanner::createDupRemovalNode() {
-
+    Node newRoot(DISTINCT);
+    newRoot.inPipeL = root->outPipe;
+    newRoot.outSchema = root->outSchema;
+    root = &newRoot;
 }
