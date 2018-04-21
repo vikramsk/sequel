@@ -9,21 +9,17 @@ void QueryPlanner::createProjectNode() {
     newRoot.inPipeL = root->outPipe;
     newRoot.inPipeR = NULL;
     newRoot.numAttsIn = root->outSchema->GetNumAtts();
-    //newRoot.numAttsOut = 3;
-    //int keepMe[] = {0, 1, 7};
     newRoot.keepMe = getAttributesList(newRoot.numAttsOut);
-
+    if (newRoot.numAttsOut == 0) {
+        cerr << "output attributes are not specified in the query" << endl;
+        exit(1);
+    }
     root = &newRoot;
 }
 
 int *QueryPlanner::getAttributesList(int &numAttsOut) {
-    if (!tokens.attsToSelect) {
-        cerr << "output attributes are not specified in the query" << endl;
-        exit(1);
-    }
-
-    vector<int> finalAtts;
     numAttsOut = 0;
+    vector<int> finalAtts;
     struct NameList *selAttribute = tokens.attsToSelect;
     
     while (selAttribute) {
@@ -35,8 +31,8 @@ int *QueryPlanner::getAttributesList(int &numAttsOut) {
         numAttsOut++;
         finalAtts.push_back(pos);
         selAttribute = selAttribute->next;
-
     }
+
     return finalAtts.data();
 }
 

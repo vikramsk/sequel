@@ -58,7 +58,7 @@ void QueryPlanner::processAggFuncs() {
                 cerr << "group by with distinct sum function is not supported by this database (yet)" << endl;
                 exit(1);
             } else {
-                createProjectNode();
+                createProjectNode(); //TODO: Figure how to use attributes inside the function
                 createDupRemovalNode();
                 createSumNode();
             }
@@ -69,8 +69,10 @@ void QueryPlanner::processAggFuncs() {
                     cerr << "group by without aggregate function is not supported by this database (yet)" << endl;
                     exit(1);
                 }
-            }
-            createProjectNode();
+            } else if (tokens.aggFunction)
+                createSumNode();
+            else 
+                createProjectNode();
         }
     }
 }
