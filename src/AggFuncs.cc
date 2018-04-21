@@ -6,9 +6,8 @@
 void QueryPlanner::createProjectNode() {
     Node newRoot(PROJECT);
     newRoot.inPipeL = root->outPipe;
-    newRoot.inPipeR = NULL;
     newRoot.numAttsIn = root->outSchema->GetNumAtts();
-    newRoot.keepMe = getAttributesList(newRoot.numAttsOut);
+    newRoot.attsToKeep = getAttributesList(newRoot.numAttsOut);
     if (newRoot.numAttsOut == 0) {
         cerr << "output attributes are not specified in the query" << endl;
         exit(1);

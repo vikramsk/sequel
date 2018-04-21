@@ -20,7 +20,7 @@ class Node {
     unordered_set<string> relations;
     opType operation;
 
-    int *keepMe;
+    int *attsToKeep;
     int numAttsIn;
     int numAttsOut;
 
