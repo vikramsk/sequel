@@ -10,24 +10,24 @@
 
 using namespace std;
 
-vector<char *> convertToCStrings(vector<string> strs) {
-    vector<char *> cstrings{};
-
-    for (auto &str : strs) {
-        cstrings.push_back(&str.front());
-    }
-    return cstrings;
-}
-
 char *getCString(string str) {
     char *val = new char[str.length() + 1];
     strcpy(val, str.c_str());
     return val;
 }
 
+char **convertToCStrings(vector<string> strs) {
+    char **cStrings = new char *[strs.size()];
+
+    for (int i = 0; i < strs.size(); i++) {
+        cStrings[i] = getCString(strs[i]);
+    }
+    return cStrings;
+}
+
 void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
     cout << endl << endl;
-    switch(operation) {
+    switch (operation) {
         case JOIN:
             cout << "JOIN : " << endl;
             cout << ">>> Input pipe ID 1 : " << inPipeL_ID << endl;
@@ -41,7 +41,7 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
         case SELFILE:
             cout << "SELECT FILE : " << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
-            cout << ">>> Input file : " << endl; //TODO: Print filename
+            cout << ">>> Input file : " << endl;  // TODO: Print filename
             cout << ">>> CNF : ";
             cnf.Print();
             cout << ">>> Literal : ";
@@ -54,16 +54,16 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> No. of input attributes : " << numAttsIn;
             cout << ">>> No. of attributes to keep : " << numAttsOut;
             cout << ">>> Index of attributes to keep : ";
-            for ( int i = 0; i < numAttsOut; i++ ) {
-    	        cout << attsToKeep[i] << ' ';
+            for (int i = 0; i < numAttsOut; i++) {
+                cout << attsToKeep[i] << ' ';
             }
             cout << endl;
-            break; 
-        case SUM: 
+            break;
+        case SUM:
             cout << "SUM : " << endl;
             cout << ">>> Input pipe ID : " << inPipeL_ID << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
-            cout << ">>> Function : " << endl; //TODO: Print function
+            cout << ">>> Function : " << endl;  // TODO: Print function
             break;
         case GROUPBY:
             cout << "GROUP BY : " << endl;
@@ -71,7 +71,7 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
             cout << ">>> Attributes to group by : ";
             groupOrder->Print();
-            cout << ">>> Function : " << endl; //TODO: Print function
+            cout << ">>> Function : " << endl;  // TODO: Print function
             break;
         case DISTINCT:
             cout << "DUPLICATE REMOVAL : " << endl;
@@ -81,7 +81,7 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             OrderMaker om(outSchema);
             om.Print();
             break;
-        // Note that SELPIPE is not used here
+            // Note that SELPIPE is not used here
     }
 }
 
@@ -96,111 +96,6 @@ void QueryPlanner::Create() {
         r.second->cnf.Print();
     }
     if (tokens.aggFunction) processAggFuncs();
-}
-
-void QueryPlanner::Print() {
-    Node *ptr = root;
-    int outCounter = 0;
-    recurseAndPrint(ptr, outCounter);
-}
-
-int QueryPlanner::recurseAndPrint(Node *ptr,int &outPipe_ID) {
-    if (!ptr) return 0;
-    int inPipeL_ID = recurseAndPrint(ptr->leftLink, outPipe_ID);
-    int inPipeR_ID = recurseAndPrint(ptr->rightLink, outPipe_ID);
-    outPipe_ID++;
-    ptr->Print(inPipeL_ID, inPipeR_ID, outPipe_ID);
-    return outPipe_ID;
-}
-
-// reads the table list and loads the stats
-// for the relations given in the table list.
-unordered_map<string, string> QueryPlanner::initializeStats() {
-    auto config = cpptoml::parse_file("config.toml");
-    auto entry = config->get_as<string>("stats");
-    char *statsPath = new char[entry->length() + 1];
-    strcpy(statsPath, entry->c_str());
-
-    stats.Read(statsPath);
-
-    TableList *tblPtr = tokens.tables;
-    unordered_set<string> relList;
-    unordered_map<string, string> relAliasMap;
-    while (tblPtr != NULL) {
-        if (tblPtr == NULL) cout << "Woot" << endl;
-
-        stats.CopyRel(tblPtr->tableName, tblPtr->aliasAs);
-        string tblAlias(tblPtr->aliasAs);
-        relAliasMap[tblAlias] = string(tblPtr->tableName);
-
-        // this loads the key in the map.
-        tokens.relClauses[tblAlias];
-        stats.DeleteRel(tblPtr->tableName);
-
-        tblPtr = tblPtr->next;
-    }
-
-    // TODO: Delete all extra relations using the catalog.
-}
-
-void QueryPlanner::processAndList(unordered_map<string, string> relAliasMap) {
-    tokens.createRelOrPairs();
-    cout << "reached" << endl;
-    createSelectionNodes(relAliasMap);
-}
-
-struct orListComparator {
-    inline bool operator()(const OrList *or1, const OrList *or2) {
-        if (or1->rightOr) {
-            return false;
-        }
-        return true;
-    }
-};
-
-AndList *createAndList(vector<OrList *> orList) {
-    if (!orList.size()) return NULL;
-    sort(orList.begin(), orList.end(), orListComparator());
-    AndList *aList = new AndList();
-    AndList *aListPtr = aList;
-    for (auto &orl : orList) {
-        aListPtr->left = orl;
-        aListPtr = aListPtr->rightAnd;
-    }
-    return aList;
-}
-
-void QueryPlanner::createSelectionNodes(
-    unordered_map<string, string> relAliasMap) {
-    auto config = cpptoml::parse_file("config.toml");
-    auto entry = config->get_as<string>("catalog");
-    char *catalogPath = new char[entry->length() + 1];
-    strcpy(catalogPath, entry->c_str());
-
-    for (auto &rc : tokens.relClauses) {
-        vector<OrList *> orList;
-        for (auto &rp : rc.second) {
-            if (rp->relations.size() == 1) {
-                orList.push_back(rp->orList);
-            }
-        }
-
-        AndList *andList = createAndList(orList);
-        vector<string> relName{rc.first};
-        vector<char *> relNames = convertToCStrings(relName);
-
-        relationNode[rc.first] = new Node(SELFILE);
-        relationNode[rc.first]->relations.insert(rc.first);
-        relationNode[rc.first]->outSchema =
-            new Schema(catalogPath, getCString(relAliasMap[rc.first]));
-
-        if (andList) {
-            stats.Apply(andList, relNames.data(), 1);
-            relationNode[rc.first]->cnf.GrowFromParseTree(
-                andList, relationNode[rc.first]->outSchema,
-                relationNode[rc.first]->literal);
-        }
-    }
 }
 
 void QueryPlanner::processAggFuncs() {
@@ -232,11 +127,10 @@ void QueryPlanner::processAggFuncs() {
                 if (tokens.aggFunction) {
                     createGroupByNode();
                     NameList *sumAtt;
-                    *sumAtt = {"GroupSum",tokens.attsToSelect};
+                    *sumAtt = {"GroupSum", tokens.attsToSelect};
                     tokens.attsToSelect = sumAtt;
                     createProjectNode();
-                }
-                else {
+                } else {
                     cerr << "group by without aggregate function is not "
                             "supported by this database (yet)"
                          << endl;
@@ -246,6 +140,136 @@ void QueryPlanner::processAggFuncs() {
                 createSumNode();
             else
                 createProjectNode();
+        }
+    }
+}
+
+void QueryPlanner::Print() {
+    Node *ptr = root;
+    int outCounter = 0;
+    recurseAndPrint(ptr, outCounter);
+}
+
+int QueryPlanner::recurseAndPrint(Node *ptr, int &outPipe_ID) {
+    if (!ptr) return 0;
+    int inPipeL_ID = recurseAndPrint(ptr->leftLink, outPipe_ID);
+    int inPipeR_ID = recurseAndPrint(ptr->rightLink, outPipe_ID);
+    outPipe_ID++;
+    ptr->Print(inPipeL_ID, inPipeR_ID, outPipe_ID);
+    return outPipe_ID;
+}
+
+// reads the table list and loads the stats
+// for the relations given in the table list.
+unordered_map<string, string> QueryPlanner::initializeStats() {
+    auto config = cpptoml::parse_file("config.toml");
+    auto entry = config->get_as<string>("stats");
+    char *statsPath = new char[entry->length() + 1];
+    strcpy(statsPath, entry->c_str());
+
+    stats.Read(statsPath);
+
+    TableList *tblPtr = tokens.tables;
+    unordered_set<string> relList;
+    unordered_map<string, string> relAliasMap;
+    while (tblPtr) {
+        stats.CopyRel(tblPtr->tableName, tblPtr->aliasAs);
+        string tblAlias(tblPtr->aliasAs);
+        relAliasMap[tblAlias] = string(tblPtr->tableName);
+
+        // this loads the key in the map.
+        tokens.relClauses[tblAlias];
+        stats.DeleteRel(tblPtr->tableName);
+
+        tblPtr = tblPtr->next;
+    }
+
+    // TODO: Delete all extra relations using the catalog.
+    return relAliasMap;
+}
+
+void QueryPlanner::processAndList(unordered_map<string, string> relAliasMap) {
+    tokens.createRelOrPairs();
+    createSelectionNodes(relAliasMap);
+    createJoinOrder();
+    root = relationNode.begin()->second;
+}
+
+void QueryPlanner::createJoinOrder() {}
+
+struct orListComparator {
+    inline bool operator()(const OrList *or1, const OrList *or2) {
+        if (or1->rightOr) {
+            return false;
+        }
+        return true;
+    }
+};
+
+AndList *createAndList(vector<OrList *> orList) {
+    if (!orList.size()) return NULL;
+    sort(orList.begin(), orList.end(), orListComparator());
+    AndList *aList = new AndList();
+    AndList *aListPtr = aList;
+    int size = orList.size();
+    for (int i = 0; i < size; i++) {
+        aListPtr->left = orList[i];
+        if (i < size - 1) {
+            aListPtr->rightAnd = new AndList();
+            aListPtr = aListPtr->rightAnd;
+        }
+    }
+    return aList;
+}
+
+Schema *getTransformedSchema(string relName, string relAlias) {
+    auto config = cpptoml::parse_file("config.toml");
+    auto entry = config->get_as<string>("catalog");
+    char *catalogPath = new char[entry->length() + 1];
+    strcpy(catalogPath, entry->c_str());
+
+    Schema *schema = new Schema(catalogPath, getCString(relName));
+
+    Attribute *atts = schema->GetAtts();
+    for (int i = 0; i < schema->GetNumAtts(); i++) {
+        char *name = new char;
+        strcat(name, getCString(relAlias));
+        strcat(name, ".");
+        strcat(name, atts[i].name);
+        atts[i].name = name;
+    }
+    return schema;
+}
+
+void QueryPlanner::createSelectionNodes(
+    unordered_map<string, string> relAliasMap) {
+    for (auto &rc : tokens.relClauses) {
+        vector<OrList *> orList;
+        for (auto &rp : rc.second) {
+            if (rp->relations.size() == 1) {
+                orList.push_back(rp->orList);
+                tokens.relOrPairs.remove(rp);
+            }
+        }
+
+        AndList *andList = createAndList(orList);
+        vector<string> relName{rc.first};
+        char **relNames = convertToCStrings(relName);
+
+        relationNode[rc.first] = new Node(SELFILE);
+        relationNode[rc.first]->inPipeL = NULL;
+        relationNode[rc.first]->inPipeR = NULL;
+        relationNode[rc.first]->outPipe = new Pipe(100);
+
+        relationNode[rc.first]->relations.insert(rc.first);
+        relationNode[rc.first]->outSchema =
+            getTransformedSchema(relAliasMap[rc.first], rc.first);
+
+        if (andList) {
+            stats.Apply(andList, relNames, 1);
+            relationNode[rc.first]->cnf.GrowFromParseTree(
+                andList, relationNode[rc.first]->outSchema,
+                relationNode[rc.first]->literal);
         }
     }
 }

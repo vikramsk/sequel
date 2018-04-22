@@ -2,10 +2,10 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include "Function.h"
 #include "ParseTree.h"
 #include "Pipe.h"
 #include "Schema.h"
-#include "Function.h"
 #include "Statistics.h"
 
 typedef enum { JOIN, SELFILE, SELPIPE, PROJECT, SUM, GROUPBY, DISTINCT } opType;
@@ -97,13 +97,14 @@ class QueryPlanner {
     void processAndList(unordered_map<string, string> relAliasMap);
     void processAggFuncs();
     void createSelectionNodes(unordered_map<string, string> relAliasMap);
+    void createJoinOrder();
     void createProjectNode();
     void createGroupByNode();
     void createSumNode();
     void createDupRemovalNode();
     void setAttributesList(int &numAttsOut, int *attsToKeep, Schema *newSchema);
     void setupGroupOrder(Schema *newSchema);
-    int recurseAndPrint(Node *ptr,int &outPipe_ID);
+    int recurseAndPrint(Node *ptr, int &outPipe_ID);
 
    public:
     QueryPlanner(QueryTokens &qt) : tokens(qt) {}
