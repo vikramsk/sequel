@@ -1,6 +1,7 @@
 #include "QueryPlanner.h"
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -80,44 +81,6 @@ void QueryPlanner::processAggFuncs() {
     }
 }
 
-// reads the table list and loads the stats
-// for the relations given in the table list.
-unordered_map<string, string> QueryPlanner::initializeStats() {
-    auto config = cpptoml::parse_file("config.toml");
-    auto entry = config->get_as<string>("stats");
-    char *statsPath = new char[entry->length() + 1];
-    strcpy(statsPath, entry->c_str());
-
-    stats.Read(statsPath);
-
-    TableList *tblPtr = tokens.tables;
-    unordered_set<string> relList;
-    unordered_map<string, string> relAliasMap;
-    while (tblPtr) {
-        stats.CopyRel(tblPtr->tableName, tblPtr->aliasAs);
-        string tblAlias(tblPtr->aliasAs);
-        relAliasMap[tblAlias] = string(tblPtr->tableName);
-
-        // this loads the key in the map.
-        tokens.relClauses[tblAlias];
-        stats.DeleteRel(tblPtr->tableName);
-
-        tblPtr = tblPtr->next;
-    }
-
-    // TODO: Delete all extra relations using the catalog.
-    return relAliasMap;
-}
-
-void QueryPlanner::processAndList(unordered_map<string, string> relAliasMap) {
-    tokens.createRelOrPairs();
-    createSelectionNodes(relAliasMap);
-    createJoinOrder();
-    root = relationNode.begin()->second;
-}
-
-void QueryPlanner::createJoinOrder() {}
-
 struct orListComparator {
     inline bool operator()(const OrList *or1, const OrList *or2) {
         if (or1->rightOr) {
@@ -141,6 +104,162 @@ AndList *createAndList(vector<OrList *> orList) {
         }
     }
     return aList;
+}
+
+// reads the table list and loads the stats
+// for the relations given in the table list.
+unordered_map<string, string> QueryPlanner::initializeStats() {
+    auto config = cpptoml::parse_file("config.toml");
+    auto entry = config->get_as<string>("stats");
+    char *statsPath = new char[entry->length() + 1];
+    strcpy(statsPath, entry->c_str());
+
+    stats.Read(statsPath);
+
+    TableList *tblPtr = tokens.tables;
+    unordered_set<string> relList;
+    unordered_map<string, string> relAliasMap;
+    while (tblPtr) {
+        stats.CopyRel(tblPtr->tableName, tblPtr->aliasAs);
+        string tblAlias(tblPtr->aliasAs);
+        relAliasMap[tblAlias] = string(tblPtr->tableName);
+
+        // this loads the key in the map.
+        tokens.relClauses[tblAlias];
+
+        tblPtr = tblPtr->next;
+    }
+
+    // TODO: Delete all extra relations using the catalog.
+    return relAliasMap;
+}
+
+void QueryPlanner::processAndList(unordered_map<string, string> relAliasMap) {
+    tokens.createRelOrPairs();
+    createSelectionNodes(relAliasMap);
+    createJoinOrder();
+    root = relationNode.begin()->second;
+}
+
+void QueryPlanner::createJoinOrder() {
+    while (tokens.relOrPairs.size()) {
+        mergeCheapestRelations();
+    }
+
+    // merges all relations into one node if
+    // it's not already done.
+    performCrossJoins();
+}
+
+void QueryPlanner::performCrossJoins() {}
+
+void QueryPlanner::mergeCheapestRelations() {
+    double minEstimate = numeric_limits<double>::max();
+    vector<RelOrPair *> minRelOrPairs;
+    AndList *queryAndList;
+    for (auto &rop : tokens.relOrPairs) {
+        unordered_set<string> rels;
+        vector<RelOrPair *> relOrPairs = {rop};
+
+        rels.insert(rop->relations.begin(), rop->relations.end());
+        if (!areNodesMergeable(rels)) continue;
+
+        for (auto &rop2 : tokens.relOrPairs) {
+            if (rop == rop2) continue;
+
+            unordered_set<string> additionalRels;
+            additionalRels.insert(rels.begin(), rels.end());
+            additionalRels.insert(rop2->relations.begin(),
+                                  rop2->relations.end());
+            if (areNodesMergeable(additionalRels)) {
+                rels.insert(rop2->relations.begin(), rop2->relations.end());
+                relOrPairs.push_back(rop2);
+            }
+        }
+
+        double est = estimate(relOrPairs, false);
+        if (est < minEstimate) {
+            minEstimate = est;
+            minRelOrPairs = relOrPairs;
+        }
+    }
+    Node *joinNode = createJoinNode(minRelOrPairs);
+
+    for (int i = 0; i < minRelOrPairs.size(); i++) {
+        for (auto r : minRelOrPairs[i]->relations) {
+            relationNode[r] = joinNode;
+            relationNode[r]->relations.insert(r);
+        }
+        tokens.relOrPairs.remove(minRelOrPairs[i]);
+        delete minRelOrPairs[i];
+    }
+}
+
+Node *QueryPlanner::createJoinNode(vector<RelOrPair *> &relOrPairs) {
+    Node *node = new Node(JOIN);
+    node->outPipe = new Pipe(100);
+
+    estimate(relOrPairs, true);
+
+    Node *nodeL = relationNode[*relOrPairs[0]->relations.begin()];
+    Node *nodeR;
+    bool nodesSet = false;
+    vector<OrList *> orList;
+    for (int i = 0; i < relOrPairs.size(); i++) {
+        orList.push_back(relOrPairs[i]->orList);
+        if (nodesSet) continue;
+
+        for (auto &r : relOrPairs[i]->relations) {
+            if (nodeL == relationNode[r]) continue;
+            nodeR = relationNode[r];
+            nodesSet = true;
+            break;
+        }
+    }
+
+    AndList *andList = createAndList(orList);
+
+    node->outSchema = new Schema();
+    node->outSchema->Merge(nodeL->outSchema, nodeR->outSchema);
+    node->cnf.GrowFromParseTree(andList, node->outSchema, node->literal);
+    node->leftLink = nodeL;
+    node->inPipeL = nodeL->outPipe;
+    node->rightLink = nodeR;
+    node->inPipeR = nodeR->outPipe;
+    return node;
+}
+
+double QueryPlanner::estimate(vector<RelOrPair *> relOrPairs,
+                              bool applyEstimate) {
+    vector<OrList *> orList;
+    unordered_set<string> rels;
+    for (auto &rop : relOrPairs) {
+        orList.push_back(rop->orList);
+        for (auto &r : rop->relations) {
+            rels.insert(r);
+            rels.insert(relationNode[r]->relations.begin(),
+                        relationNode[r]->relations.end());
+        }
+    }
+    vector<string> relList;
+    relList.insert(relList.end(), rels.begin(), rels.end());
+
+    AndList *andList = createAndList(orList);
+    double estimate =
+        stats.Estimate(andList, convertToCStrings(relList), rels.size());
+
+    if (applyEstimate)
+        stats.Apply(andList, convertToCStrings(relList), rels.size());
+
+    return estimate;
+}
+
+bool QueryPlanner::areNodesMergeable(unordered_set<string> rels) {
+    unordered_set<Node *> uniqueNodes;
+    for (auto r : rels) {
+        uniqueNodes.insert(relationNode[r]);
+    }
+    return uniqueNodes.size() == 2;
 }
 
 Schema *getTransformedSchema(string relName, string relAlias) {
@@ -179,6 +298,7 @@ void QueryPlanner::createSelectionNodes(
         char **relNames = convertToCStrings(relName);
 
         relationNode[rc.first] = new Node(SELFILE);
+        relationNode[rc.first]->fileName = relAliasMap[rc.first] + ".bin";
         relationNode[rc.first]->inPipeL = NULL;
         relationNode[rc.first]->inPipeR = NULL;
         relationNode[rc.first]->outPipe = new Pipe(100);

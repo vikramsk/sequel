@@ -25,6 +25,7 @@ class Node {
     int numAttsIn;
     int numAttsOut;
     int *attsToKeep;
+    string fileName;
 
     CNF cnf;
     Function func;
@@ -107,7 +108,14 @@ class QueryPlanner {
     void processAndList(unordered_map<string, string> relAliasMap);
     void processAggFuncs();
     void createSelectionNodes(unordered_map<string, string> relAliasMap);
+
     void createJoinOrder();
+    Node *createJoinNode(vector<RelOrPair *> &relOrPairs);
+    void performCrossJoins();
+    void mergeCheapestRelations();
+    double estimate(vector<RelOrPair *> relOrPairs, bool applyEstimate);
+    bool areNodesMergeable(unordered_set<string> rels);
+
     void createProjectNode();
     void createGroupByNode();
     void createSumNode();

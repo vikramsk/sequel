@@ -1,5 +1,5 @@
-#include "QueryPlanner.h"
 #include <iostream>
+#include "QueryPlanner.h"
 
 int pipeSize = 100;  // buffer sz allowed for each pipe
 int bufferSize = 100;  // pages of memory allowed for operations
@@ -33,7 +33,8 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
         case SELFILE: {
             cout << "SELECT FILE : " << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
-            cout << ">>> Input file : " << endl;  // TODO: Print filename
+            cout << ">>> Input file : " << fileName
+                 << endl;  // TODO: Print filename
             cout << ">>> CNF : ";
             cnf.Print();
         } break;

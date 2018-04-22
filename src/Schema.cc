@@ -53,6 +53,27 @@ Schema :: Schema (char *fpath, int num_atts, Attribute *atts) {
 	}
 }
 
+void Schema ::Merge(const Schema *left, const Schema *right) {
+    fileName = NULL;
+    numAtts = left->numAtts + right->numAtts;
+    
+    myAtts = new Attribute[numAtts];
+
+    for (int i = 0; i < left->numAtts; i++) {
+        myAtts[i].name = (char *) malloc(strlen(left->myAtts[i].name));
+        strcpy(myAtts[i].name, left->myAtts[i].name);
+        myAtts[i].myType = left->myAtts[i].myType;
+    }
+
+    int loff = left->numAtts;
+    for (int i = 0; i < right->numAtts; i++) {
+        myAtts[i+ loff].name = (char *) malloc(strlen(right->myAtts[i].name));
+        strcpy(myAtts[i + loff].name, right->myAtts[i].name);
+        myAtts[i + loff].myType = right->myAtts[i].myType;
+    } 
+}
+
+
 Schema ::Schema(const char *fName, const char *relName) {
     FILE *foo = fopen(fName, "r");
 

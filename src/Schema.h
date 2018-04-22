@@ -43,6 +43,9 @@ public:
 	// this finds the type of the given attribute
 	Type FindType (const char *attName);
 
+    // Merges the two schemas
+    void Merge(const Schema *left, const Schema *right);
+    
 	// this reads the specification for the schema in from a file
 	Schema (const char *fName, const char *relName);
 
@@ -53,6 +56,8 @@ public:
 	// place a lexicographic ordering on the records using this type of schema
 	int GetSortOrder (OrderMaker &order);
 
+	Schema (){}
+	
 	~Schema ();
 
 };
