@@ -54,15 +54,13 @@ void QueryPlanner::processAggFuncs() {
                      << endl;
                 exit(1);
             } else {
-                createProjectNode();  // TODO: Figure how to use attributes
-                                      // inside the function
+                createProjectNode();  // Projects attributes within the function
                 createDupRemovalNode();
                 createSumNode();
             }
         } else {
             if (tokens.groupingAtts) {
                 if (tokens.aggFunction) {
-                    createProjectNode();
                     createGroupByNode();
                 } else {
                     cerr << "group by without aggregate function is not "

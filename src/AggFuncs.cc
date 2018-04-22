@@ -27,11 +27,6 @@ int *QueryPlanner::setAttributesList(int &numAttsOut, Schema *&newSchema) {
         selAttribute = extractAttsFromFunc(tokens.aggFunction, NULL);
         addAttsToList(finalAtts,numAttsOut,selAttribute);
     }
-    if (tokens.groupingAtts) {
-        selAttribute = tokens.groupingAtts;
-        addAttsToList(finalAtts,numAttsOut,selAttribute);
-    }
-
     sort(finalAtts.begin(), finalAtts.end(),
         [](AttDetails att1, AttDetails att2) 
         { return att1.pos - att2.pos; });
