@@ -149,8 +149,8 @@ gtest.a : gtest-all.o
 gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
-testsuite: $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o gtest.a dbfolder
-	$(CC) $(CXXFLAGS) -Isrc $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/yyfunc.tab.o build/src/lex.yyfunc.o gtest.a -o $@
+testsuite: $(OBJS) $(TEST_OBJS) build/src/yysql.tab.o build/src/lex.yysql.o build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o gtest.a dbfolder
+	$(CC) $(CXXFLAGS) -Isrc $(OBJS) $(TEST_OBJS) build/src/y.tab.o build/src/lex.yy.o build/src/yyfunc.tab.o build/src/lex.yyfunc.o build/src/yysql.tab.o build/src/lex.yysql.o gtest.a -o $@
 	mv $@ build
 
 .PHONY: clean

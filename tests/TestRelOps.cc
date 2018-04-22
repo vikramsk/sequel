@@ -4,10 +4,7 @@
 #include "gtest/gtest.h"
 #include "testsuite.h"
 #include "RelOp.h"
-extern "C" struct YY_BUFFER_STATE *yy_scan_string(const char *);
-extern "C" int yyparse(void);
 
-char *catalog_path, *dbfile_dir, *tpch_dir = NULL;
 relation *s,*ps;
 
 SelectFile SF_ps, SF_s;

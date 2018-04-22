@@ -9,7 +9,10 @@ using namespace std;
 
 extern "C" {
 int yyparse(void);                 // defined in y.tab.c
+int yysqlparse(void);
 int yyfuncparse(void);             // defined in yyfunc.tab.c
+void init_sql_parser(char *);
+void close_sql_parser();       
 void init_lexical_parser(char *);  // defined in lex.yy.c (from Lexer.l)
 void close_lexical_parser();       // defined in lex.yy.c
 void init_lexical_parser_func(
@@ -21,6 +24,14 @@ struct YY_BUFFER_STATE *yy_scan_string(const char *);
 extern struct AndList *final;
 extern struct FuncOperator *finalfunc;
 extern FILE *yyin;
+
+extern struct FuncOperator *finalFunction;
+extern struct TableList *tables;
+extern struct AndList *boolean;
+extern struct NameList *groupingAtts;
+extern struct NameList *attsToSelect;
+extern int distinctAtts;
+extern int distinctFunc;
 
 typedef struct {
     Pipe *pipe;

@@ -12,9 +12,12 @@
 #include <stdlib.h> // For malloc()
 #include "ParseTree.h"
 #include "yysql.tab.h"
+static YY_BUFFER_STATE yysql_buf_state;
 
-int lineno = 1;
+int sqllineno = 1;
 void yysqlerror(char*s);
+void init_sql_parser (char *src) { yysql_buf_state = yy_scan_string (src); }
+void close_sql_parser () { yy_delete_buffer (yysql_buf_state); }
 
 %}
 
@@ -101,7 +104,7 @@ void yysqlerror(char*s);
                         }
                         }
 
-\n                	lineno++;
+\n                	sqllineno++;
 
 [ \t]             	;
 
@@ -110,7 +113,7 @@ void yysqlerror(char*s);
 %%
 
 void yysqlerror(char *s) {
-  printf("%d: %s at %s\n", lineno, s, yysqltext);
+  printf("%d: %s at %s\n", sqllineno, s, yysqltext);
 }
 
 int yysqlwrap(void){
