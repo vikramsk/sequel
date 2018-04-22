@@ -159,6 +159,10 @@ void QueryPlanner::mergeCheapestRelations() {
     AndList *queryAndList;
     for (auto &rop : tokens.relOrPairs) {
         unordered_set<string> rels;
+        for (auto &r : rop->relations) {
+            rels.insert(relationNode[r]->relations.begin(),
+                        relationNode[r]->relations.end());
+        }
         vector<RelOrPair *> relOrPairs = {rop};
 
         rels.insert(rop->relations.begin(), rop->relations.end());
@@ -168,6 +172,10 @@ void QueryPlanner::mergeCheapestRelations() {
             if (rop == rop2) continue;
 
             unordered_set<string> additionalRels;
+            for (auto &r : rop2->relations) {
+                additionalRels.insert(relationNode[r]->relations.begin(),
+                                      relationNode[r]->relations.end());
+            }
             additionalRels.insert(rels.begin(), rels.end());
             additionalRels.insert(rop2->relations.begin(),
                                   rop2->relations.end());
@@ -186,13 +194,17 @@ void QueryPlanner::mergeCheapestRelations() {
     Node *joinNode = createJoinNode(minRelOrPairs);
 
     for (int i = 0; i < minRelOrPairs.size(); i++) {
-        for (auto r : minRelOrPairs[i]->relations) {
-            relationNode[r] = joinNode;
-            relationNode[r]->relations.insert(r);
-        }
         tokens.relOrPairs.remove(minRelOrPairs[i]);
         delete minRelOrPairs[i];
     }
+
+    for (auto &r : joinNode->relations) {
+        relationNode[r] = joinNode;
+    }
+}
+
+void updateRelNodes(vector<RelOrPair *> &relOrPairs, Node *joinNode) {
+    unordered_set<string> uniqueRels;
 }
 
 Node *QueryPlanner::createJoinNode(vector<RelOrPair *> &relOrPairs) {
@@ -226,6 +238,8 @@ Node *QueryPlanner::createJoinNode(vector<RelOrPair *> &relOrPairs) {
     node->inPipeL = nodeL->outPipe;
     node->rightLink = nodeR;
     node->inPipeR = nodeR->outPipe;
+    node->relations.insert(nodeL->relations.begin(), nodeL->relations.end());
+    node->relations.insert(nodeR->relations.begin(), nodeR->relations.end());
     return node;
 }
 
