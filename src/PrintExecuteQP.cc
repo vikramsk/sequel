@@ -26,8 +26,6 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
             cout << ">>> CNF : ";
             cnf.Print();
-            cout << ">>> Literal : ";
-            literal.Print(outSchema);
             break;
         case SELFILE:
             cout << "SELECT FILE : " << endl;
@@ -35,8 +33,6 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Input file : " << endl;  // TODO: Print filename
             cout << ">>> CNF : ";
             cnf.Print();
-            cout << ">>> Literal : ";
-            literal.Print(outSchema);
             break;
         case PROJECT:
             cout << "PROJECT : " << endl;
