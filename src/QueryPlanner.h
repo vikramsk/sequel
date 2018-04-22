@@ -5,6 +5,7 @@
 #include "Function.h"
 #include "ParseTree.h"
 #include "Pipe.h"
+#include "RelOp.h"
 #include "Schema.h"
 #include "Statistics.h"
 
@@ -29,6 +30,7 @@ class Node {
     Function func;
     Record literal;
     Schema *outSchema;
+    RelationalOp *relOp;
     OrderMaker *groupOrder;
 
     Pipe *outPipe;
@@ -40,6 +42,7 @@ class Node {
 
     Node(opType opt)
         : operation(opt),
+          relOp(NULL),
           inPipeL(NULL),
           inPipeR(NULL),
           outPipe(NULL),
@@ -49,6 +52,7 @@ class Node {
     ~Node() {}
 
     void Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID);
+    void Execute();
 
     friend class QueryPlanner;
 };
@@ -111,10 +115,12 @@ class QueryPlanner {
     int *setAttributesList(int &numAttsOut, Schema *&newSchema);
     void setupGroupOrder(Schema *&newSchema);
     int recurseAndPrint(Node *ptr, int &outPipe_ID);
+    void recurseAndExecute(Node *ptr);
 
    public:
     QueryPlanner(QueryTokens &qt) : tokens(qt) {}
     ~QueryPlanner();
     void Create();
     void Print();
+    void Execute();
 };
