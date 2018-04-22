@@ -62,11 +62,8 @@ void QueryPlanner::processAggFuncs() {
         } else {
             if (tokens.groupingAtts) {
                 if (tokens.aggFunction) {
-                    createGroupByNode();
-                    NameList *sumAtt;
-                    *sumAtt = {"GroupSum", tokens.attsToSelect};
-                    tokens.attsToSelect = sumAtt;
                     createProjectNode();
+                    createGroupByNode();
                 } else {
                     cerr << "group by without aggregate function is not "
                             "supported by this database (yet)"

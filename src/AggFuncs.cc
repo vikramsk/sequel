@@ -18,30 +18,18 @@ void QueryPlanner::createProjectNode() {
     root = newRoot;
 }
 
-int *QueryPlanner::setAttributesList(int &numAttsOut, Schema *&newSchema) {
-    struct AttDetails {
-        int pos;
-        Attribute details;
-    };
-    
+int *QueryPlanner::setAttributesList(int &numAttsOut, Schema *&newSchema) { 
     numAttsOut = 0;
     vector<AttDetails> finalAtts;
-    struct NameList *selAttribute = tokens.attsToSelect;
-
-    while (selAttribute) {
-        int position = root->outSchema->Find(selAttribute->name);
-        if (position == -1) {
-            cerr << selAttribute->name << " is an invalid output attribute"
-                 << endl;
-            exit(1);
-        }
-        numAttsOut++;
-        AttDetails att;
-        att.pos = position;
-        att.details.name = strdup(selAttribute->name);
-        att.details.myType = root->outSchema->FindType(selAttribute->name);
-        finalAtts.push_back(att);
-        selAttribute = selAttribute->next;
+    NameList *selAttribute = tokens.attsToSelect;
+    addAttsToList(finalAtts,numAttsOut,selAttribute);
+    if (tokens.aggFunction) {
+        selAttribute = extractAttsFromFunc(tokens.aggFunction, NULL);
+        addAttsToList(finalAtts,numAttsOut,selAttribute);
+    }
+    if (tokens.groupingAtts) {
+        selAttribute = tokens.groupingAtts;
+        addAttsToList(finalAtts,numAttsOut,selAttribute);
     }
 
     sort(finalAtts.begin(), finalAtts.end(),
@@ -57,6 +45,36 @@ int *QueryPlanner::setAttributesList(int &numAttsOut, Schema *&newSchema) {
     return attsToKeep;
 }
 
+void QueryPlanner::addAttsToList(vector<AttDetails> &finalAtts, int &numAttsOut, NameList *selAttribute) {
+    while (selAttribute) {
+        int position = root->outSchema->Find(selAttribute->name);
+        if (position == -1) {
+            cerr << selAttribute->name << " is an invalid output attribute"
+                 << endl;
+            exit(1);
+        }
+        numAttsOut++;
+        AttDetails att;
+        att.pos = position;
+        att.details.name = strdup(selAttribute->name);
+        att.details.myType = root->outSchema->FindType(selAttribute->name);
+        finalAtts.push_back(att);
+        selAttribute = selAttribute->next;
+    }
+}
+
+NameList *QueryPlanner::extractAttsFromFunc(FuncOperator *root, NameList *rest) {
+    if (!root) return rest;
+    rest = extractAttsFromFunc(root->leftOperator, rest);
+    if (root->leftOperand->code == NAME) {
+        NameList *head = new NameList();
+        *head = {root->leftOperand->value, rest};
+        rest = head;
+    }
+    return extractAttsFromFunc(root->right, rest);
+}
+
+
 void QueryPlanner::createGroupByNode() {
     Node *newRoot = new Node(GROUPBY);
     newRoot->leftLink = root;
@@ -68,30 +86,10 @@ void QueryPlanner::createGroupByNode() {
 }
 
 void QueryPlanner::setupGroupOrder(Schema *&newSchema) {
-    struct AttDetails {
-        int pos;
-        Attribute details;
-    };
-    
     int numAttsOut = 0;
     vector<AttDetails> finalAtts;
     struct NameList *groupAttribute = tokens.groupingAtts;
-
-    while (groupAttribute) {
-        int position = root->outSchema->Find(groupAttribute->name);
-        if (position == -1) {
-            cerr << groupAttribute->name << " is an invalid attribute for grouping"
-                 << endl;
-            exit(1);
-        }
-        numAttsOut++;
-        AttDetails att;
-        att.pos = position;
-        att.details.name = strdup(groupAttribute->name);
-        att.details.myType = root->outSchema->FindType(groupAttribute->name);
-        finalAtts.push_back(att);
-        groupAttribute = groupAttribute->next;
-    }
+    addAttsToList(finalAtts,numAttsOut,groupAttribute);
 
     sort(finalAtts.begin(), finalAtts.end(),
         [](AttDetails att1, AttDetails att2) 

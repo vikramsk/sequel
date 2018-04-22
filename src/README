@@ -2,16 +2,16 @@
 
 ```sql
 (q1)
-SELECT SUM (ps.ps_supplycost), s.suppkey 
+SELECT SUM (ps.ps_supplycost), s.s_suppkey 
 FROM part AS p, supplier AS s, partsupp AS ps 
 WHERE (p.p_partkey = ps.ps_partkey) AND 
-	  (s.s_suppkey = ps.ps_suppkey) AND (s.s_acctbal > 2500) 
+	  (s.s_suppkey = ps.ps_suppkey) AND (s.s_acctbal > 2500.0) 
 GROUP BY s.s_suppkey
 	
 (q2)
-SELECT SUM (c.c_acctbal),name 
+SELECT SUM (c.c_acctbal),c.c_name 
 FROM customer AS c, orders AS o 
-WHERE (c.c_custkey = o.o_custkey) AND (o.o_totalprice < 10000) 
+WHERE (c.c_custkey = o.o_custkey) AND (o.o_totalprice < 10000.0) 
 GROUP BY c.c_name
 
 (q3)
