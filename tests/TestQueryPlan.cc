@@ -4,22 +4,22 @@
 #include "gtest/gtest.h"
 #include "testsuite.h"
 
-TEST(QueryPlanTest, Query1) {
-    char *query =
-        "SELECT SUM (ps.ps_supplycost), s.s_suppkey FROM part AS p, supplier "
-        "AS s, partsupp AS ps WHERE (p.p_partkey = ps.ps_partkey) AND "
-        "(s.s_suppkey = ps.ps_suppkey) AND (s.s_acctbal > 2500.0) GROUP BY "
-        "s.s_suppkey";
-    cout << endl << query << endl;
-    init_sql_parser(query);
-    yysqlparse();
-    close_sql_parser();
-    QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
-    QueryPlanner qp(qt);
-    qp.Create();
-    qp.Print();
-}
+// TEST(QueryPlanTest, Query1) {
+//    char *query =
+//        "SELECT SUM (ps.ps_supplycost), s.s_suppkey FROM part AS p, supplier "
+//        "AS s, partsupp AS ps WHERE (p.p_partkey = ps.ps_partkey) AND "
+//        "(s.s_suppkey = ps.ps_suppkey) AND (s.s_acctbal > 2500.0) GROUP BY "
+//        "s.s_suppkey";
+//    cout << endl << query << endl;
+//    init_sql_parser(query);
+//    yysqlparse();
+//    close_sql_parser();
+//    QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
+//                   distinctAtts, distinctFunc);
+//    QueryPlanner qp(qt);
+//    qp.Create();
+//    qp.Print();
+//}
 
 TEST(QueryPlanTest, Query2) {
     char *query =
@@ -69,23 +69,22 @@ TEST(QueryPlanTest, Query4) {
     qp.Print();
 }
 
-// TEST(QueryPlanTest, Query5) {
-//    char *query =
-//        "SELECT SUM(l.l_discount) FROM customer AS c, orders AS o, lineitem AS
-//        " "l WHERE (c.c_custkey = o.o_custkey) AND (o.o_orderkey =
-//        l.l_orderkey) " "AND (c.c_name = 'Customer#000070919') AND
-//        (l.l_quantity > 30) AND "
-//        "(l.l_discount < 0.03)";
-//    cout << endl << query << endl;
-//    init_sql_parser(query);
-//    yysqlparse();
-//    close_sql_parser();
-//    QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-//                   distinctAtts, distinctFunc);
-//    QueryPlanner qp(qt);
-//    qp.Create();
-//    qp.Print();
-//}
+TEST(QueryPlanTest, Query5) {
+    char *query =
+        "SELECT SUM(l.l_discount) FROM customer AS c, orders AS o, lineitem AS "
+        "l WHERE (c.c_custkey = o.o_custkey) AND (o.o_orderkey = l.l_orderkey) "
+        "AND (c.c_name = 'Customer#000070919') AND (l.l_quantity > 30) AND "
+        "(l.l_discount < 0.03)";
+    cout << endl << query << endl;
+    init_sql_parser(query);
+    yysqlparse();
+    close_sql_parser();
+    QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
+                   distinctAtts, distinctFunc);
+    QueryPlanner qp(qt);
+    qp.Create();
+    qp.Print();
+}
 
 TEST(QueryPlanTest, Query6) {
     char *query =
