@@ -31,7 +31,7 @@ void QueryPlanner::Create() {
 
     if (tokens.andList) processAndList(relAliasMap);
 
-    if (tokens.aggFunction) processAggFuncs();
+    processAggFuncs();
 }
 
 void QueryPlanner::processAggFuncs() {

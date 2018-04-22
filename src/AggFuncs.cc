@@ -10,7 +10,7 @@ void QueryPlanner::createProjectNode() {
     newRoot->leftLink = root;
     newRoot->inPipeL = root->outPipe;
     newRoot->numAttsIn = root->outSchema->GetNumAtts();
-    setAttributesList(newRoot->numAttsOut, newRoot->attsToKeep, newRoot->outSchema);
+    newRoot->attsToKeep = setAttributesList(newRoot->numAttsOut, newRoot->outSchema);
     if (newRoot->numAttsOut == 0) {
         cerr << "output attributes are not specified in the query" << endl;
         exit(1);
@@ -18,7 +18,7 @@ void QueryPlanner::createProjectNode() {
     root = newRoot;
 }
 
-void QueryPlanner::setAttributesList(int &numAttsOut, int *attsToKeep, Schema *newSchema) {
+int *QueryPlanner::setAttributesList(int &numAttsOut, Schema *newSchema) {
     struct AttDetails {
         int pos;
         Attribute details;
@@ -47,13 +47,14 @@ void QueryPlanner::setAttributesList(int &numAttsOut, int *attsToKeep, Schema *n
     sort(finalAtts.begin(), finalAtts.end(),
         [](AttDetails att1, AttDetails att2) 
         { return att1.pos - att2.pos; });
-    attsToKeep = new int[numAttsOut];
+    int *attsToKeep = new int[numAttsOut];
     Attribute *attsList = new Attribute[numAttsOut];
     for (int i = 0; i < numAttsOut; i++) {
         attsToKeep[i] = finalAtts[i].pos;
         attsList[i] = finalAtts[i].details;
     }
-    newSchema = new Schema("out_schema",numAttsOut,attsList);    
+    newSchema = new Schema("out_schema",numAttsOut,attsList);
+    return attsToKeep;
 }
 
 void QueryPlanner::createGroupByNode() {

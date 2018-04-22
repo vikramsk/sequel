@@ -17,7 +17,7 @@ int QueryPlanner::recurseAndPrint(Node *ptr, int &outPipe_ID) {
 }
 
 void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
-    cout << endl << endl;
+    cout << endl;
     switch (operation) {
         case JOIN:
             cout << "JOIN : " << endl;
@@ -38,8 +38,8 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << "PROJECT : " << endl;
             cout << ">>> Input pipe ID : " << inPipeL_ID << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
-            cout << ">>> No. of input attributes : " << numAttsIn;
-            cout << ">>> No. of attributes to keep : " << numAttsOut;
+            cout << ">>> No. of input attributes : " << numAttsIn << endl;
+            cout << ">>> No. of attributes to keep : " << numAttsOut << endl;
             cout << ">>> Index of attributes to keep : ";
             for (int i = 0; i < numAttsOut; i++) {
                 cout << attsToKeep[i] << ' ';
@@ -70,4 +70,5 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             break;
             // Note that SELPIPE is not used here
     }
+    cout << endl;
 }
