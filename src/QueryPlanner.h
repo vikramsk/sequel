@@ -39,7 +39,13 @@ class Node {
     Node *rightLink;
 
     Node(opType opt)
-        : operation(opt), inPipeL(NULL), inPipeR(NULL), outPipe(NULL) {}
+        : operation(opt),
+          inPipeL(NULL),
+          inPipeR(NULL),
+          outPipe(NULL),
+          leftLink(NULL),
+          rightLink(NULL) {}
+
     ~Node() {}
 
     void Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID);
