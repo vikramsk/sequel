@@ -6,16 +6,16 @@
 #include "string.h"
 
 void QueryPlanner::createProjectNode() {
-    Node newRoot(PROJECT);
-    newRoot.leftLink = root;
-    newRoot.inPipeL = root->outPipe;
-    newRoot.numAttsIn = root->outSchema->GetNumAtts();
-    setAttributesList(newRoot.numAttsOut, newRoot.attsToKeep, newRoot.outSchema);
-    if (newRoot.numAttsOut == 0) {
+    Node *newRoot = new Node(PROJECT);
+    newRoot->leftLink = root;
+    newRoot->inPipeL = root->outPipe;
+    newRoot->numAttsIn = root->outSchema->GetNumAtts();
+    setAttributesList(newRoot->numAttsOut, newRoot->attsToKeep, newRoot->outSchema);
+    if (newRoot->numAttsOut == 0) {
         cerr << "output attributes are not specified in the query" << endl;
         exit(1);
     }
-    root = &newRoot;
+    root = newRoot;
 }
 
 void QueryPlanner::setAttributesList(int &numAttsOut, int *attsToKeep, Schema *newSchema) {
@@ -57,13 +57,13 @@ void QueryPlanner::setAttributesList(int &numAttsOut, int *attsToKeep, Schema *n
 }
 
 void QueryPlanner::createGroupByNode() {
-    Node newRoot(GROUPBY);
-    newRoot.leftLink = root;
-    newRoot.inPipeL = root->outPipe;
-    newRoot.func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
-    setupGroupOrder(newRoot.outSchema);
-    newRoot.groupOrder = new OrderMaker(newRoot.outSchema);
-    root = &newRoot;
+    Node *newRoot = new Node(GROUPBY);
+    newRoot->leftLink = root;
+    newRoot->inPipeL = root->outPipe;
+    newRoot->func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
+    setupGroupOrder(newRoot->outSchema);
+    newRoot->groupOrder = new OrderMaker(newRoot->outSchema);
+    root = newRoot;
 }
 
 void QueryPlanner::setupGroupOrder(Schema *newSchema) {
@@ -104,19 +104,19 @@ void QueryPlanner::setupGroupOrder(Schema *newSchema) {
 }
 
 void QueryPlanner::createSumNode() {
-    Node newRoot(SUM);
-    newRoot.leftLink = root;
-    newRoot.inPipeL = root->outPipe;
-    newRoot.func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
+    Node *newRoot = new Node(SUM);
+    newRoot->leftLink = root;
+    newRoot->inPipeL = root->outPipe;
+    newRoot->func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
     Attribute attsList[1] = {{"Sum", Double}};
-    newRoot.outSchema = new Schema("out_schema",1,attsList);
-    root = &newRoot;
+    newRoot->outSchema = new Schema("out_schema",1,attsList);
+    root = newRoot;
 }
 
 void QueryPlanner::createDupRemovalNode() {
-    Node newRoot(DISTINCT);
-    newRoot.leftLink = root;
-    newRoot.inPipeL = root->outPipe;
-    newRoot.outSchema = root->outSchema;
-    root = &newRoot;
+    Node *newRoot = new Node(DISTINCT);
+    newRoot->leftLink = root;
+    newRoot->inPipeL = root->outPipe;
+    newRoot->outSchema = root->outSchema;
+    root = newRoot;
 }

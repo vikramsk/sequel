@@ -31,9 +31,6 @@ void QueryPlanner::Create() {
 
     if (tokens.andList) processAndList(relAliasMap);
 
-    for (auto r : relationNode) {
-        r.second->cnf.Print();
-    }
     if (tokens.aggFunction) processAggFuncs();
 }
 
@@ -158,7 +155,7 @@ Schema *getTransformedSchema(string relName, string relAlias) {
     for (int i = 0; i < schema->GetNumAtts(); i++) {
         size_t len = relAlias.size() + strlen(atts[i].name) + 2;
         char *name = (char *)malloc(len + 2);
-        strcat(name, getCString(relAlias));
+        strcpy(name, getCString(relAlias));
         strcat(name, ".");
         strcat(name, atts[i].name);
         atts[i].name = name;
