@@ -7,6 +7,7 @@
 
 void QueryPlanner::createProjectNode() {
     Node newRoot(PROJECT);
+    newRoot.leftLink = root;
     newRoot.inPipeL = root->outPipe;
     newRoot.numAttsIn = root->outSchema->GetNumAtts();
     setAttributesList(newRoot.numAttsOut, newRoot.attsToKeep, newRoot.outSchema);
@@ -57,6 +58,7 @@ void QueryPlanner::setAttributesList(int &numAttsOut, int *attsToKeep, Schema *n
 
 void QueryPlanner::createGroupByNode() {
     Node newRoot(GROUPBY);
+    newRoot.leftLink = root;
     newRoot.inPipeL = root->outPipe;
     newRoot.func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
     setupGroupOrder(newRoot.outSchema);
@@ -103,6 +105,7 @@ void QueryPlanner::setupGroupOrder(Schema *newSchema) {
 
 void QueryPlanner::createSumNode() {
     Node newRoot(SUM);
+    newRoot.leftLink = root;
     newRoot.inPipeL = root->outPipe;
     newRoot.func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
     Attribute attsList[1] = {{"Sum", Double}};
@@ -112,6 +115,7 @@ void QueryPlanner::createSumNode() {
 
 void QueryPlanner::createDupRemovalNode() {
     Node newRoot(DISTINCT);
+    newRoot.leftLink = root;
     newRoot.inPipeL = root->outPipe;
     newRoot.outSchema = root->outSchema;
     root = &newRoot;

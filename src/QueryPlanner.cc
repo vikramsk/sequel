@@ -88,7 +88,7 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
 QueryPlanner::~QueryPlanner() {}
 
 void QueryPlanner::Create() {
-    auto relAliasMap = initializeStats();
+    unordered_map<string, string> relAliasMap = initializeStats();
 
     if (tokens.andList) processAndList(relAliasMap);
 
