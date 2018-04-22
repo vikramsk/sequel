@@ -108,8 +108,8 @@ class QueryPlanner {
     void createGroupByNode();
     void createSumNode();
     void createDupRemovalNode();
-    int *setAttributesList(int &numAttsOut, Schema *newSchema);
-    void setupGroupOrder(Schema *newSchema);
+    int *setAttributesList(int &numAttsOut, Schema *&newSchema);
+    void setupGroupOrder(Schema *&newSchema);
     int recurseAndPrint(Node *ptr, int &outPipe_ID);
 
    public:

@@ -18,7 +18,7 @@ void QueryPlanner::createProjectNode() {
     root = newRoot;
 }
 
-int *QueryPlanner::setAttributesList(int &numAttsOut, Schema *newSchema) {
+int *QueryPlanner::setAttributesList(int &numAttsOut, Schema *&newSchema) {
     struct AttDetails {
         int pos;
         Attribute details;
@@ -67,7 +67,7 @@ void QueryPlanner::createGroupByNode() {
     root = newRoot;
 }
 
-void QueryPlanner::setupGroupOrder(Schema *newSchema) {
+void QueryPlanner::setupGroupOrder(Schema *&newSchema) {
     struct AttDetails {
         int pos;
         Attribute details;
