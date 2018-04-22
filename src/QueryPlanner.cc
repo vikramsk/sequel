@@ -1,4 +1,5 @@
 #include "QueryPlanner.h"
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -155,7 +156,8 @@ Schema *getTransformedSchema(string relName, string relAlias) {
 
     Attribute *atts = schema->GetAtts();
     for (int i = 0; i < schema->GetNumAtts(); i++) {
-        char *name = new char;
+        size_t len = relAlias.size() + strlen(atts[i].name) + 2;
+        char *name = (char *)malloc(len + 2);
         strcat(name, getCString(relAlias));
         strcat(name, ".");
         strcat(name, atts[i].name);
