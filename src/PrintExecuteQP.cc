@@ -62,7 +62,7 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
-            cout << ">>> Function : " << endl;  // TODO: Print function
+            // cout << ">>> Function : " << endl;  // TODO: Print function
         } break;
         case GROUPBY: {
             cout << "GROUP BY : " << endl;
@@ -72,7 +72,7 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             groupOrder->Print();
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
-            cout << ">>> Function : " << endl;  // TODO: Print function
+            // cout << ">>> Function : " << endl;  // TODO: Print function
         } break;
         case DISTINCT: {
             cout << "DUPLICATE REMOVAL : " << endl;
@@ -80,9 +80,6 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
-            // cout << ">>> Schema : ";
-            // OrderMaker om(outSchema);
-            // om.Print();
         } break;
             // Note that SELPIPE is not used here
     }
