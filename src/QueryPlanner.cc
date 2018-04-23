@@ -146,7 +146,54 @@ void QueryPlanner::createJoinOrder() {
     performCrossJoins();
 }
 
-void QueryPlanner::performCrossJoins() {}
+void QueryPlanner::performCrossJoins() {
+    unordered_set<Node *> uniqueNodes;
+    for (auto &r : relationNode) {
+        uniqueNodes.insert(r.second);
+    }
+    if (uniqueNodes.size() == 1) return;
+
+    double minEstimate = numeric_limits<double>::max();
+    pair<Node *, Node *> minNodes;
+    for (auto &n1 : uniqueNodes) {
+        for (auto &n2 : uniqueNodes) {
+            if (n1 == n2) continue;
+            vector<string> mergeRelations;
+            mergeRelations.insert(mergeRelations.end(), n1->relations.begin(),
+                                  n1->relations.end());
+            mergeRelations.insert(mergeRelations.end(), n2->relations.begin(),
+                                  n2->relations.end());
+            double est = stats.Estimate(NULL, convertToCStrings(mergeRelations),
+                                        mergeRelations.size());
+            if (est < minEstimate) {
+                minEstimate = est;
+                minNodes = make_pair(n1, n2);
+            }
+        }
+    }
+
+    Node *joinNode = new Node(JOIN);
+    joinNode->outPipe = new Pipe(100);
+    joinNode->inPipeL = minNodes.first->outPipe;
+    joinNode->leftLink = minNodes.first;
+    joinNode->inPipeR = minNodes.second->outPipe;
+    joinNode->rightLink = minNodes.second;
+    joinNode->relations.insert(minNodes.first->relations.begin(),
+                               minNodes.first->relations.end());
+    joinNode->relations.insert(minNodes.second->relations.begin(),
+                               minNodes.second->relations.end());
+    joinNode->outSchema = new Schema();
+    joinNode->outSchema->Merge(minNodes.first->outSchema,
+                               minNodes.second->outSchema);
+    joinNode->cnf.GrowFromParseTree(NULL, minNodes.first->outSchema,
+                                    minNodes.second->outSchema,
+                                    joinNode->literal);
+    for (auto &r : joinNode->relations) {
+        relationNode[r] = joinNode;
+    }
+
+    performCrossJoins();
+}
 
 void QueryPlanner::mergeCheapestRelations() {
     double minEstimate = numeric_limits<double>::max();
