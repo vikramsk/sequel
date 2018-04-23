@@ -316,12 +316,10 @@ void QueryPlanner::createSelectionNodes(
         relationNode[rc.first]->outSchema =
             getTransformedSchema(relAliasMap[rc.first], rc.first);
 
-        if (andList) {
-            stats.Apply(andList, relNames, 1);
-            relationNode[rc.first]->cnf.GrowFromParseTree(
-                andList, relationNode[rc.first]->outSchema,
-                relationNode[rc.first]->literal);
-        }
+        if (andList) stats.Apply(andList, relNames, 1);
+        relationNode[rc.first]->cnf.GrowFromParseTree(
+        andList, relationNode[rc.first]->outSchema,
+        relationNode[rc.first]->literal);
     }
 }
 
