@@ -228,7 +228,8 @@ Node *QueryPlanner::createJoinNode(vector<RelOrPair *> &relOrPairs) {
 
     node->outSchema = new Schema();
     node->outSchema->Merge(nodeL->outSchema, nodeR->outSchema);
-    node->cnf.GrowFromParseTree(andList, node->outSchema, node->literal);
+    node->cnf.GrowFromParseTree(andList, nodeL->outSchema, nodeR->outSchema,
+                                node->literal);
     node->leftLink = nodeL;
     node->inPipeL = nodeL->outPipe;
     node->rightLink = nodeR;
@@ -318,8 +319,8 @@ void QueryPlanner::createSelectionNodes(
 
         if (andList) stats.Apply(andList, relNames, 1);
         relationNode[rc.first]->cnf.GrowFromParseTree(
-        andList, relationNode[rc.first]->outSchema,
-        relationNode[rc.first]->literal);
+            andList, relationNode[rc.first]->outSchema,
+            relationNode[rc.first]->literal);
     }
 }
 
