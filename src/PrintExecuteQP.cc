@@ -24,8 +24,8 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
     switch (operation) {
         case JOIN: {
             cout << "JOIN : " << endl;
-            cout << ">>> Input pipe ID 1 : " << inPipeL_ID << endl;
-            cout << ">>> Input pipe ID 2 : " << inPipeR_ID << endl;
+            cout << ">>> Input pipe1 ID : " << inPipeL_ID << endl;
+            cout << ">>> Input pipe2 ID : " << inPipeR_ID << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
