@@ -22,6 +22,9 @@ The repository consists of the following:
  - Enter the root directory and run:
 	 `make all`
    This will create a build directory in the root folder along with the executables.
+
+ - The queries can be executed using main. For running the main program, execute: 
+	 `./build/main`
  - To run console driven tests for assignment 4.1 (statistics estimation), execute:
 	 `./build/test.out`
  - To run console driven tests for assignment 3 (relational operations), execute:
@@ -32,8 +35,6 @@ The repository consists of the following:
 	 `./build/test1.out`
  - For running unit tests, execute: 
 	 `./build/testsuite`
-- For running the main program, execute: 
-	 `./build/main`
 
 # Contributors
 
