@@ -43,6 +43,9 @@ public:
 	// this finds the type of the given attribute
 	Type FindType (const char *attName);
 
+	// prints the Schema
+	void Print();
+
     // Merges the two schemas
     void Merge(const Schema *left, const Schema *right);
     

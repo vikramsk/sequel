@@ -73,6 +73,21 @@ void Schema ::Merge(const Schema *left, const Schema *right) {
     } 
 }
 
+string printTypeString(Type t) {
+    if (t == Int)
+        return "Int";
+    else if (t == Double)
+        return "Double";
+    else
+        return "String";
+}
+
+void Schema ::Print() {
+    for(int i = 0; i<numAtts; i++) {
+        cout<<myAtts[i].name<<" : "<<printTypeString(myAtts[i].myType)<<endl;
+    }
+}
+
 
 Schema ::Schema(const char *fName, const char *relName) {
     FILE *foo = fopen(fName, "r");

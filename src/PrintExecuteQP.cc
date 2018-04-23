@@ -1,7 +1,7 @@
 #include <iostream>
 #include "QueryPlanner.h"
 
-int pipeSize = 100;  // buffer sz allowed for each pipe
+int pipeSize = 100;    // buffer sz allowed for each pipe
 int bufferSize = 100;  // pages of memory allowed for operations
 
 void QueryPlanner::Print() {
@@ -27,6 +27,8 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Input pipe ID 1 : " << inPipeL_ID << endl;
             cout << ">>> Input pipe ID 2 : " << inPipeR_ID << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
+            cout << ">>> Output Schema: " << endl;
+            outSchema->Print();
             cout << ">>> CNF : ";
             cnf.Print();
         } break;
@@ -35,6 +37,8 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
             cout << ">>> Input file : " << fileName
                  << endl;  // TODO: Print filename
+            cout << ">>> Output Schema: " << endl;
+            outSchema->Print();
             cout << ">>> CNF : ";
             cnf.Print();
         } break;
@@ -49,11 +53,15 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
                 cout << attsToKeep[i] << ' ';
             }
             cout << endl;
+            cout << ">>> Output Schema: " << endl;
+            outSchema->Print();
         } break;
         case SUM: {
             cout << "SUM : " << endl;
             cout << ">>> Input pipe ID : " << inPipeL_ID << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
+            cout << ">>> Output Schema: " << endl;
+            outSchema->Print();
             cout << ">>> Function : " << endl;  // TODO: Print function
         } break;
         case GROUPBY: {
@@ -62,17 +70,21 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
             cout << ">>> Attributes to group by : ";
             groupOrder->Print();
+            cout << ">>> Output Schema: " << endl;
+            outSchema->Print();
             cout << ">>> Function : " << endl;  // TODO: Print function
         } break;
         case DISTINCT: {
             cout << "DUPLICATE REMOVAL : " << endl;
             cout << ">>> Input pipe ID : " << inPipeL_ID << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
-            cout << ">>> Schema : ";
-            OrderMaker om(outSchema);
-            om.Print();
+            cout << ">>> Output Schema: " << endl;
+            outSchema->Print();
+            // cout << ">>> Schema : ";
+            // OrderMaker om(outSchema);
+            // om.Print();
         } break;
-        // Note that SELPIPE is not used here
+            // Note that SELPIPE is not used here
     }
     cout << endl;
 }
@@ -97,7 +109,7 @@ void Node::Execute() {
             relOp = new Join();
             relOp->Use_n_Pages(bufferSize);
             outPipe = new Pipe(pipeSize);
-            
+
             Join *J = dynamic_cast<Join *>(relOp);
             J->Run(*inPipeL, *inPipeR, *outPipe, cnf, literal);
         } break;
@@ -109,7 +121,7 @@ void Node::Execute() {
             DBFile *dbfile = new DBFile();
             // TODO: Open file using path
             // dbfile->Open(fpath);
-            
+
             SelectFile *SF = dynamic_cast<SelectFile *>(relOp);
             SF->Run(*dbfile, *outPipe, cnf, literal);
         } break;
@@ -117,7 +129,7 @@ void Node::Execute() {
             relOp = new Project();
             relOp->Use_n_Pages(bufferSize);
             outPipe = new Pipe(pipeSize);
-            
+
             Project *P = dynamic_cast<Project *>(relOp);
             P->Run(*inPipeL, *outPipe, attsToKeep, numAttsIn, numAttsOut);
         } break;
@@ -125,7 +137,7 @@ void Node::Execute() {
             relOp = new Sum();
             relOp->Use_n_Pages(1);
             outPipe = new Pipe(1);
-            
+
             Sum *S = dynamic_cast<Sum *>(relOp);
             S->Run(*inPipeL, *outPipe, func);
         } break;
@@ -133,7 +145,7 @@ void Node::Execute() {
             relOp = new GroupBy();
             relOp->Use_n_Pages(bufferSize);
             outPipe = new Pipe(pipeSize);
-            
+
             GroupBy *G = dynamic_cast<GroupBy *>(relOp);
             G->Run(*inPipeL, *outPipe, *groupOrder, func);
         } break;
@@ -141,10 +153,10 @@ void Node::Execute() {
             relOp = new DuplicateRemoval();
             relOp->Use_n_Pages(bufferSize);
             outPipe = new Pipe(pipeSize);
-            
+
             DuplicateRemoval *D = dynamic_cast<DuplicateRemoval *>(relOp);
             D->Run(*inPipeL, *outPipe, *outSchema);
         } break;
-        // Note that SELPIPE is not used here
+            // Note that SELPIPE is not used here
     }
 }
