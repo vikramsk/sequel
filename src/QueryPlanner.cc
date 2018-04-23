@@ -204,7 +204,7 @@ void updateRelNodes(vector<RelOrPair *> &relOrPairs, Node *joinNode) {
 
 Node *QueryPlanner::createJoinNode(vector<RelOrPair *> &relOrPairs) {
     Node *node = new Node(JOIN);
-    node->outPipe = new Pipe(100);
+    node->outPipe = new Pipe(tokens.pipeSize);
 
     estimate(relOrPairs, true);
 
@@ -311,7 +311,7 @@ void QueryPlanner::createSelectionNodes(
         relationNode[rc.first]->fileName = relAliasMap[rc.first] + ".bin";
         relationNode[rc.first]->inPipeL = NULL;
         relationNode[rc.first]->inPipeR = NULL;
-        relationNode[rc.first]->outPipe = new Pipe(100);
+        relationNode[rc.first]->outPipe = new Pipe(tokens.pipeSize);
 
         relationNode[rc.first]->relations.insert(rc.first);
         relationNode[rc.first]->outSchema =

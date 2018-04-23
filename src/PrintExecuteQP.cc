@@ -2,7 +2,6 @@
 #include "cpptoml.h"
 #include "QueryPlanner.h"
 
-int pipeSize = 100;    // buffer sz allowed for each pipe
 int bufferSize = 100;  // pages of memory allowed for operations
 
 void QueryPlanner::Print() {
@@ -105,7 +104,6 @@ void Node::Execute() {
         case JOIN: {
             relOp = new Join();
             relOp->Use_n_Pages(bufferSize);
-            outPipe = new Pipe(pipeSize);
 
             Join *J = dynamic_cast<Join *>(relOp);
             J->Run(*inPipeL, *inPipeR, *outPipe, cnf, literal);
@@ -113,7 +111,6 @@ void Node::Execute() {
         case SELFILE: {
             relOp = new SelectFile();
             relOp->Use_n_Pages(bufferSize);
-            outPipe = new Pipe(pipeSize);
 
             DBFile *dbfile = new DBFile();
             dbfile->Open(getFilePath());
@@ -124,7 +121,6 @@ void Node::Execute() {
         case PROJECT: {
             relOp = new Project();
             relOp->Use_n_Pages(bufferSize);
-            outPipe = new Pipe(pipeSize);
 
             Project *P = dynamic_cast<Project *>(relOp);
             P->Run(*inPipeL, *outPipe, attsToKeep, numAttsIn, numAttsOut);
@@ -132,7 +128,6 @@ void Node::Execute() {
         case SUM: {
             relOp = new Sum();
             relOp->Use_n_Pages(1);
-            outPipe = new Pipe(1);
 
             Sum *S = dynamic_cast<Sum *>(relOp);
             S->Run(*inPipeL, *outPipe, func);
@@ -140,7 +135,6 @@ void Node::Execute() {
         case GROUPBY: {
             relOp = new GroupBy();
             relOp->Use_n_Pages(bufferSize);
-            outPipe = new Pipe(pipeSize);
 
             GroupBy *G = dynamic_cast<GroupBy *>(relOp);
             G->Run(*inPipeL, *outPipe, *groupOrder, func);
@@ -148,7 +142,6 @@ void Node::Execute() {
         case DISTINCT: {
             relOp = new DuplicateRemoval();
             relOp->Use_n_Pages(bufferSize);
-            outPipe = new Pipe(pipeSize);
 
             DuplicateRemoval *D = dynamic_cast<DuplicateRemoval *>(relOp);
             D->Run(*inPipeL, *outPipe, *outSchema);

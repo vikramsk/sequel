@@ -75,7 +75,8 @@ class QueryTokens {
     bool distinctWithAgg;
     unordered_map<string, vector<RelOrPair *>> relClauses;
     list<RelOrPair *> relOrPairs;
-
+    int pipeSize; // buffer sz allowed for each pipe
+    
     void createRelOrPairs();
 
    public:
@@ -86,6 +87,8 @@ class QueryTokens {
         andList = al;
         groupingAtts = ga;
         attsToSelect = ats;
+        pipeSize = 100; // TODO: Accept as a parameter in the constructor
+        
         // 1 if there is a DISTINCT in a non-aggregate query
         if (distinctAtts == 1) {
             distinctNoAgg = true;
