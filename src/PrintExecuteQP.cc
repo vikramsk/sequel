@@ -1,4 +1,5 @@
 #include <iostream>
+#include "cpptoml.h"
 #include "QueryPlanner.h"
 
 int pipeSize = 100;    // buffer sz allowed for each pipe
@@ -35,8 +36,7 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
         case SELFILE: {
             cout << "SELECT FILE : " << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
-            cout << ">>> Input file : " << fileName
-                 << endl;  // TODO: Print filename
+            cout << ">>> Input file : " << fileName << endl;
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
             cout << ">>> CNF : ";
@@ -116,8 +116,7 @@ void Node::Execute() {
             outPipe = new Pipe(pipeSize);
 
             DBFile *dbfile = new DBFile();
-            // TODO: Open file using path
-            // dbfile->Open(fpath);
+            dbfile->Open(getFilePath());
 
             SelectFile *SF = dynamic_cast<SelectFile *>(relOp);
             SF->Run(*dbfile, *outPipe, cnf, literal);
@@ -156,4 +155,11 @@ void Node::Execute() {
         } break;
             // Note that SELPIPE is not used here
     }
+}
+
+const char *Node::getFilePath() {
+    auto config = cpptoml::parse_file("config.toml");
+    auto dbfileDir = config->get_as<string>("dbfiles");
+    string fpath = *dbfileDir + fileName;
+    return fpath.c_str();
 }

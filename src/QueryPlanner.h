@@ -57,6 +57,7 @@ class Node {
 
     ~Node() {}
 
+    const char *getFilePath();
     void Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID);
     void Execute();
 
