@@ -4,6 +4,7 @@
 #include <stdlib.h>
 Function :: Function () {
 
+	parseTreePtr = NULL;
 	opList = new Arithmatic[MAX_DEPTH];
 }
 
@@ -186,6 +187,8 @@ Type Function :: RecursivelyBuild (struct FuncOperator *parseTree, Schema &mySch
 
 void Function :: GrowFromParseTree (struct FuncOperator *parseTree, Schema &mySchema) {
 
+	parseTreePtr = parseTree;
+
 	// zero out the list of operrations
 	numOps = 0;
 
@@ -200,8 +203,37 @@ void Function :: GrowFromParseTree (struct FuncOperator *parseTree, Schema &mySc
 
 }
 
-void Function :: Print () {
+void Function :: Print() {
+	cout << PrintHelper(parseTreePtr) << endl;
+}
 
+string Function :: PrintHelper(struct FuncOperator *parseTree) {
+	string temp = "";
+	if(parseTree != NULL) {
+		// First, parse left child
+		temp.append(" ");
+		if(parseTree->leftOperator != NULL) {
+			temp.append(PrintHelper(parseTree->leftOperator));
+		}
+
+		// Next, check root.
+		struct FuncOperand *op = parseTree->leftOperand;
+		if(op != NULL) {
+			temp.append(op->value);
+			// Print the operator	
+		}
+		if(parseTree->code == 42) temp.append("*");
+		else if(parseTree->code == 43) temp.append("+");
+		else if(parseTree->code == 44) temp.append("/");
+		else if(parseTree->code == 45) temp.append("-");
+
+		// Finally, check right child
+		if(parseTree->right != NULL) {
+			temp.append(PrintHelper(parseTree->right));
+		}
+		temp.append(" ");
+	}
+	return temp;
 }
 
 Type Function :: Apply (Record &toMe, int &intResult, double &doubleResult) {

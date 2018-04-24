@@ -21,6 +21,7 @@ class Function {
 
 private:
 
+	struct FuncOperator *parseTreePtr;
 	Arithmatic *opList;
 	int numOps;
 
@@ -40,7 +41,10 @@ public:
 	Type RecursivelyBuild (struct FuncOperator *parseTree, Schema &mySchema);
 
 	// prints out the function to the screen
-	void Print ();
+	void Print();
+
+	// helper function for printing parse tree
+	string PrintHelper(struct FuncOperator *parseTree);
 
 	// applies the function to the given record and returns the result
 	Type Apply (Record &toMe, int &intResult, double &doubleResult);

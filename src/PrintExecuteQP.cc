@@ -61,17 +61,19 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
-            // cout << ">>> Function : " << endl;  // TODO: Print function
+            cout << ">>> Function : ";
+            func.Print();
         } break;
         case GROUPBY: {
             cout << "GROUP BY : " << endl;
             cout << ">>> Input pipe ID : " << inPipeL_ID << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
-            cout << ">>> Attributes to group by : ";
+            cout << ">>> Attributes to group by : " << endl;
             groupOrder->Print();
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
-            // cout << ">>> Function : " << endl;  // TODO: Print function
+            cout << ">>> Function : ";
+            func.Print(); 
         } break;
         case DISTINCT: {
             cout << "DUPLICATE REMOVAL : " << endl;
