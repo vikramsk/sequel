@@ -87,10 +87,24 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
     cout << endl;
 }
 
+int Node::clear_pipe(bool print) {
+    Record rec;
+    int cnt = 0;
+    while (outPipe->Remove(&rec)) {
+        if (print) {
+            rec.Print(outSchema);
+        }
+        cnt++;
+    }
+    return cnt;
+}
+
 void QueryPlanner::Execute() {
     // TODO: Read output pipe of ptr based on the output mode set by user
     Node *ptr = root;
     recurseAndExecute(ptr);
+    int cnt = ptr->clear_pipe(true);
+    cout << "\n\n query returned " << cnt << " records \n";
 }
 
 void QueryPlanner::recurseAndExecute(Node *ptr) {
@@ -115,7 +129,8 @@ void Node::Execute() {
             relOp->Use_n_Pages(bufferSize);
 
             DBFile *dbfile = new DBFile();
-            dbfile->Open(getFilePath());
+            string fpath = getFilePath();
+            dbfile->Open(fpath.c_str());
 
             SelectFile *SF = dynamic_cast<SelectFile *>(relOp);
             SF->Run(*dbfile, *outPipe, cnf, literal);
@@ -152,9 +167,9 @@ void Node::Execute() {
     }
 }
 
-const char *Node::getFilePath() {
+string Node::getFilePath() {
     auto config = cpptoml::parse_file("config.toml");
     auto dbfileDir = config->get_as<string>("dbfiles");
     string fpath = *dbfileDir + fileName;
-    return fpath.c_str();
+    return fpath;
 }

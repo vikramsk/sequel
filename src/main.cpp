@@ -42,5 +42,6 @@ int main() {
                     attsToSelect, distinctAtts, distinctFunc);
     QueryPlanner qp(qt);
     qp.Create();
-    qp.Print();
+    //qp.Print();
+    qp.Execute();
 }

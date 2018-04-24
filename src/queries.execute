@@ -24,7 +24,7 @@ SELECT l.l_orderkey, l.l_partkey, l.l_suppkey
 FROM lineitem AS l
 WHERE (l.l_returnflag = 'R') AND 
 	  (l.l_discount < 0.04 OR l.l_shipmode = 'MAIL') AND
-	  (l.l_orderkey > 5000 AND l.l_orderkey < 6000)
+	  (l.l_orderkey > 5000) AND (l.l_orderkey < 6000)
 
 ANSWER: 109 rows in set (17.47 sec)
 
@@ -32,7 +32,7 @@ ANSWER: 109 rows in set (17.47 sec)
 
 SELECT ps.ps_partkey, ps.ps_suppkey, ps.ps_availqty 
 FROM partsupp AS ps 
-WHERE (ps.ps_partkey < 100 AND ps.ps_suppkey < 50)
+WHERE (ps.ps_partkey < 100) AND (ps.ps_suppkey < 50)
 
 ANSWER: 48 rows (1.95 sec)
 
