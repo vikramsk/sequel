@@ -65,22 +65,12 @@ OrderMaker ::OrderMaker(Schema *schema, Schema *refSchema) {
             whichAtts[numAtts] = refSchema->Find(atts[i].name);
             whichTypes[numAtts] = Int;
             numAtts++;
-        }
-    }
-
-    // now add in the doubles
-    for (int i = 0; i < n; i++) {
-        if (atts[i].myType == Double) {
-            whichAtts[numAtts] = refSchema->Find(atts[i].name);;
+        } else if (atts[i].myType == Double) {
+            whichAtts[numAtts] = refSchema->Find(atts[i].name);
             whichTypes[numAtts] = Double;
             numAtts++;
-        }
-    }
-
-    // and finally the strings
-    for (int i = 0; i < n; i++) {
-        if (atts[i].myType == String) {
-            whichAtts[numAtts] = refSchema->Find(atts[i].name);;
+        } else {
+            whichAtts[numAtts] = refSchema->Find(atts[i].name);
             whichTypes[numAtts] = String;
             numAtts++;
         }
