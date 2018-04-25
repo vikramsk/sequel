@@ -88,7 +88,7 @@ class QueryTokens {
         andList = al;
         groupingAtts = ga;
         attsToSelect = ats;
-        pipeSize = 100; // TODO: Accept as a parameter in the constructor
+        pipeSize = 5000; // TODO: Accept as a parameter in the constructor
         
         // 1 if there is a DISTINCT in a non-aggregate query
         if (distinctAtts == 1) {
