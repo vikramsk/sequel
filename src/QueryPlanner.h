@@ -9,11 +9,6 @@
 #include "Schema.h"
 #include "Statistics.h"
 
-struct AttDetails {
-    int pos;
-    Attribute details;
-};
-
 typedef enum { JOIN, SELFILE, SELPIPE, PROJECT, SUM, GROUPBY, DISTINCT } opType;
 
 class RelOrPair {
@@ -131,9 +126,9 @@ class QueryPlanner {
     void createSumNode();
     void createDupRemovalNode();
     int *setAttributesList(int &numAttsOut, Schema *&newSchema);
-    void addAttsToList(vector<AttDetails> &finalAtts, int &numAttsOut, NameList *selAttribute);
+    void addAttsToList(map<int, Attribute> &finalAtts, int &numAttsOut, NameList *selAttribute);
     NameList *extractAttsFromFunc(FuncOperator *root, NameList *rest);
-    void setupGroupOrder(Schema *&newSchema);
+    Schema *setupGroupOrder(Schema *&newSchema);
     int recurseAndPrint(Node *ptr, int &outPipe_ID);
     void recurseAndExecute(Node *ptr);
 

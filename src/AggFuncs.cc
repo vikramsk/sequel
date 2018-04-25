@@ -1,5 +1,5 @@
 #include <iostream>
-#include <algorithm>
+#include <map>
 #include "ParseTree.h"
 #include "QueryPlanner.h"
 #include "Schema.h"
@@ -21,27 +21,27 @@ void QueryPlanner::createProjectNode() {
 
 int *QueryPlanner::setAttributesList(int &numAttsOut, Schema *&newSchema) { 
     numAttsOut = 0;
-    vector<AttDetails> finalAtts;
+    map<int, Attribute> finalAtts;
     NameList *selAttribute = tokens.attsToSelect;
     addAttsToList(finalAtts,numAttsOut,selAttribute);
     if (tokens.aggFunction) {
         selAttribute = extractAttsFromFunc(tokens.aggFunction, NULL);
         addAttsToList(finalAtts,numAttsOut,selAttribute);
     }
-    sort(finalAtts.begin(), finalAtts.end(),
-        [](AttDetails att1, AttDetails att2) 
-        { return att1.pos - att2.pos; });
+
+    int i = 0;
     int *attsToKeep = new int[numAttsOut];
     Attribute *attsList = new Attribute[numAttsOut];
-    for (int i = 0; i < numAttsOut; i++) {
-        attsToKeep[i] = finalAtts[i].pos;
-        attsList[i] = finalAtts[i].details;
+    
+    for (auto pair : finalAtts) {
+        attsToKeep[i] = pair.first;
+        attsList[i++] = pair.second;
     }
     newSchema = new Schema("out_schema",numAttsOut,attsList);
     return attsToKeep;
 }
 
-void QueryPlanner::addAttsToList(vector<AttDetails> &finalAtts, int &numAttsOut, NameList *selAttribute) {
+void QueryPlanner::addAttsToList(map<int, Attribute> &finalAtts, int &numAttsOut, NameList *selAttribute) {
     while (selAttribute) {
         int position = root->outSchema->Find(selAttribute->name);
         if (position == -1) {
@@ -50,11 +50,10 @@ void QueryPlanner::addAttsToList(vector<AttDetails> &finalAtts, int &numAttsOut,
             exit(1);
         }
         numAttsOut++;
-        AttDetails att;
-        att.pos = position;
-        att.details.name = strdup(selAttribute->name);
-        att.details.myType = root->outSchema->FindType(selAttribute->name);
-        finalAtts.push_back(att);
+        Attribute att;
+        att.name = strdup(selAttribute->name);
+        att.myType = root->outSchema->FindType(selAttribute->name);
+        finalAtts[position] = att;
         selAttribute = selAttribute->next;
     }
 }
@@ -77,26 +76,30 @@ void QueryPlanner::createGroupByNode() {
     newRoot->inPipeL = root->outPipe;
     newRoot->outPipe = new Pipe(tokens.pipeSize);
     newRoot->func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
-    setupGroupOrder(newRoot->outSchema);
-    newRoot->groupOrder = new OrderMaker(newRoot->outSchema);
+    Schema *grpSchema = setupGroupOrder(newRoot->outSchema);
+    newRoot->groupOrder = new OrderMaker(grpSchema);
     root = newRoot;
 }
 
-void QueryPlanner::setupGroupOrder(Schema *&newSchema) {
+Schema *QueryPlanner::setupGroupOrder(Schema *&newSchema) {
     int numAttsOut = 0;
-    vector<AttDetails> finalAtts;
+    map<int, Attribute> finalAtts;
     struct NameList *groupAttribute = tokens.groupingAtts;
+    
     addAttsToList(finalAtts,numAttsOut,groupAttribute);
+    
+    int i = 0;
+    Attribute groupAttsList[numAttsOut];
+    Attribute finalAttsList[numAttsOut+1];
+    finalAttsList[i] = {"GroupSum", Double};
 
-    sort(finalAtts.begin(), finalAtts.end(),
-        [](AttDetails att1, AttDetails att2) 
-        { return att1.pos - att2.pos; });
-    Attribute attsList[numAttsOut+1];
-    attsList[0] = {"GroupSum", Double};
-    for (int i = 0; i < numAttsOut; i++) {
-        attsList[i+1] = finalAtts[i].details;
+    for (auto pair : finalAtts) {
+        groupAttsList[i] = pair.second;
+        finalAttsList[i+1] = pair.second;
+        i++;
     }
-    newSchema = new Schema("out_schema",numAttsOut+1,attsList);    
+    newSchema = new Schema("out_schema",numAttsOut+1,finalAttsList);
+    return new Schema("grp_schema",numAttsOut,groupAttsList);
 }
 
 void QueryPlanner::createSumNode() {

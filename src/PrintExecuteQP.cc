@@ -91,7 +91,6 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
         } break;
-            // Note that SELPIPE is not used here
     }
     cout << endl;
 }
@@ -179,7 +178,6 @@ void Node::Execute() {
             DuplicateRemoval *D = dynamic_cast<DuplicateRemoval *>(relOp);
             D->Run(*inPipeL, *outPipe, *outSchema);
         } break;
-            // Note that SELPIPE is not used here
     }
 }
 
