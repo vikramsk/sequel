@@ -54,6 +54,39 @@ void Comparison ::Print() {
 
 OrderMaker ::OrderMaker() { numAtts = 0; }
 
+OrderMaker ::OrderMaker(Schema *schema, Schema *refSchema) {
+    numAtts = 0;
+
+    int n = schema->GetNumAtts();
+    Attribute *atts = schema->GetAtts();
+
+    for (int i = 0; i < n; i++) {
+        if (atts[i].myType == Int) {
+            whichAtts[numAtts] = refSchema->Find(atts[i].name);
+            whichTypes[numAtts] = Int;
+            numAtts++;
+        }
+    }
+
+    // now add in the doubles
+    for (int i = 0; i < n; i++) {
+        if (atts[i].myType == Double) {
+            whichAtts[numAtts] = refSchema->Find(atts[i].name);;
+            whichTypes[numAtts] = Double;
+            numAtts++;
+        }
+    }
+
+    // and finally the strings
+    for (int i = 0; i < n; i++) {
+        if (atts[i].myType == String) {
+            whichAtts[numAtts] = refSchema->Find(atts[i].name);;
+            whichTypes[numAtts] = String;
+            numAtts++;
+        }
+    }
+}
+
 OrderMaker ::OrderMaker(Schema *schema) {
     numAtts = 0;
 
@@ -86,6 +119,7 @@ OrderMaker ::OrderMaker(Schema *schema) {
         }
     }
 }
+
 
 int OrderMaker ::getNumAttributes() { return numAtts; }
 

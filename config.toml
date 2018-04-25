@@ -1,4 +1,4 @@
-data = "data/10M/"
+data = "data/1G/"
 dbfiles = "build/dbfiles/"
 catalog = "data/catalog"
 stats = "data/stats"

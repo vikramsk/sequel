@@ -75,6 +75,10 @@ class OrderMaker {
     // based upon ALL of their attributes
     OrderMaker(Schema *schema);
 
+    // create an OrderMaker that can be used to sort records
+    // of refSchema based on the list of attributes in schema
+    OrderMaker(Schema *schema, Schema *refSchema);
+
     // returns the number of attributes
     int getNumAttributes();
 

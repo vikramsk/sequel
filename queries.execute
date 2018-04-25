@@ -30,6 +30,7 @@ ANSWER: 109 rows in set (17.47 sec)
 
 ===========================================================
 
+(q4)
 SELECT ps.ps_partkey, ps.ps_suppkey, ps.ps_availqty 
 FROM partsupp AS ps 
 WHERE (ps.ps_partkey < 100) AND (ps.ps_suppkey < 50)
@@ -39,7 +40,6 @@ ANSWER: 48 rows (1.95 sec)
 ==========================================================
 
 (q5)
-
 SELECT SUM (l.l_discount)
 FROM customer AS c, orders AS o, lineitem AS l
 WHERE (c.c_custkey = o.o_custkey) AND
@@ -61,8 +61,8 @@ WHERE (s.s_suppkey = ps.ps_suppkey) AND
 
 ANSWER: 9964 rows (1.51 sec)
 ===========================================================
-(q7)
 
+(q7)
 SELECT SUM (l.l_extendedprice * (1 - l.l_discount)), l.l_orderkey, o.o_orderdate, o.o_shippriority
 FROM customer AS c, orders AS o, lineitem AS l 
 WHERE (c.c_mktsegment = 'BUILDING') AND 

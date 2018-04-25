@@ -77,7 +77,7 @@ void QueryPlanner::createGroupByNode() {
     newRoot->outPipe = new Pipe(tokens.pipeSize);
     newRoot->func.GrowFromParseTree(tokens.aggFunction,*(root->outSchema));
     Schema *grpSchema = setupGroupOrder(newRoot->outSchema);
-    newRoot->groupOrder = new OrderMaker(grpSchema);
+    newRoot->groupOrder = new OrderMaker(grpSchema, root->outSchema);
     root = newRoot;
 }
 

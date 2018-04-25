@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include "RelOp.h"
 
 void *GroupBy::performGrouping(void *voidArgs) {
