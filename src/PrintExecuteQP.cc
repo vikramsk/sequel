@@ -133,6 +133,13 @@ void Node::Execute() {
             Join *J = dynamic_cast<Join *>(relOp);
             J->Run(*inPipeL, *inPipeR, *outPipe, cnf, literal);
         } break;
+        case SELPIPE: {
+            relOp = new SelectPipe();
+            relOp->Use_n_Pages(bufferSize);
+
+            SelectPipe *SP = dynamic_cast<SelectPipe *>(relOp);
+            SP->Run(*inPipeL, *outPipe, cnf, literal);
+        } break;
         case SELFILE: {
             relOp = new SelectFile();
             relOp->Use_n_Pages(bufferSize);
