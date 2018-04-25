@@ -1,6 +1,6 @@
 #include <iostream>
-#include "cpptoml.h"
 #include "QueryPlanner.h"
+#include "cpptoml.h"
 
 int bufferSize = 100;  // pages of memory allowed for operations
 
@@ -27,6 +27,15 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Input pipe1 ID : " << inPipeL_ID << endl;
             cout << ">>> Input pipe2 ID : " << inPipeR_ID << endl;
             cout << ">>> Output pipe ID : " << outPipe_ID << endl;
+            cout << ">>> Output Schema: " << endl;
+            outSchema->Print();
+            cout << ">>> CNF : ";
+            cnf.Print();
+        } break;
+        case SELPIPE: {
+            cout << "SELECT PIPE : " << endl;
+            cout << ">>> Output pipe ID : " << outPipe_ID << endl;
+            cout << ">>> Input Pipe ID: " << inPipeL_ID << endl;
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
             cout << ">>> CNF : ";
@@ -73,7 +82,7 @@ void Node::Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID) {
             cout << ">>> Output Schema: " << endl;
             outSchema->Print();
             cout << ">>> Function : ";
-            func.Print(); 
+            func.Print();
         } break;
         case DISTINCT: {
             cout << "DUPLICATE REMOVAL : " << endl;

@@ -245,8 +245,9 @@ void QueryPlanner::mergeCheapestRelations() {
     }
 }
 
-void updateRelNodes(vector<RelOrPair *> &relOrPairs, Node *joinNode) {
-    unordered_set<string> uniqueRels;
+bool isJoinOrList(OrList *orList) {
+    if (orList->rightOr) return false;
+    return true;
 }
 
 Node *QueryPlanner::createJoinNode(vector<RelOrPair *> &relOrPairs) {
@@ -258,9 +259,14 @@ Node *QueryPlanner::createJoinNode(vector<RelOrPair *> &relOrPairs) {
     Node *nodeL = relationNode[*relOrPairs[0]->relations.begin()];
     Node *nodeR;
     bool nodesSet = false;
-    vector<OrList *> orList;
+    OrList *joinOrList = NULL;
+    vector<OrList *> clauseOrList;
     for (int i = 0; i < relOrPairs.size(); i++) {
-        orList.push_back(relOrPairs[i]->orList);
+        if (isJoinOrList(relOrPairs[i]->orList))
+            joinOrList = relOrPairs[i]->orList;
+        else
+            clauseOrList.push_back(relOrPairs[i]->orList);
+
         if (nodesSet) continue;
 
         for (auto &r : relOrPairs[i]->relations) {
@@ -271,7 +277,13 @@ Node *QueryPlanner::createJoinNode(vector<RelOrPair *> &relOrPairs) {
         }
     }
 
-    AndList *andList = createAndList(orList);
+    AndList *andList;
+    if (joinOrList) {
+        andList = createAndList(vector<OrList *>{joinOrList});
+    } else {
+        andList = createAndList(clauseOrList);
+        clauseOrList.clear();
+    }
 
     node->outSchema = new Schema();
     node->outSchema->Merge(nodeL->outSchema, nodeR->outSchema);
@@ -283,7 +295,22 @@ Node *QueryPlanner::createJoinNode(vector<RelOrPair *> &relOrPairs) {
     node->inPipeR = nodeR->outPipe;
     node->relations.insert(nodeL->relations.begin(), nodeL->relations.end());
     node->relations.insert(nodeR->relations.begin(), nodeR->relations.end());
-    return node;
+
+    // no Or List to process
+    if (!clauseOrList.size()) return node;
+
+    andList = createAndList(clauseOrList);
+    Node *selNode = new Node(SELPIPE);
+    selNode->outPipe = new Pipe(tokens.pipeSize);
+    selNode->outSchema = node->outSchema;
+    selNode->cnf.GrowFromParseTree(andList, selNode->outSchema,
+                                   selNode->literal);
+    selNode->leftLink = node;
+    selNode->rightLink = NULL;
+    selNode->inPipeL = node->outPipe;
+    selNode->inPipeR = NULL;
+    selNode->relations.insert(node->relations.begin(), node->relations.end());
+    return selNode;
 }
 
 double QueryPlanner::estimate(vector<RelOrPair *> relOrPairs,
