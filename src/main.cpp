@@ -53,6 +53,7 @@ void doSelect() {
 
 int main() {
     bool quit = false;
+    refFile = NULL;
     outType = SET_NONE;
     while (!quit) {
         command = 0;

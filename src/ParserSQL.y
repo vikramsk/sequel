@@ -112,7 +112,6 @@ SQL: CREATE_TABLE TableData
 	boolean = NULL;
 	groupingAtts = NULL;
 	attsToSelect = NULL;
-	refFile = NULL;
 }
 
 | INSERT Insertion
@@ -137,7 +136,6 @@ SQL: CREATE_TABLE TableData
 	boolean = NULL;
 	groupingAtts = NULL;
 	attsToSelect = NULL;
-	refFile = NULL;
 	createData = NULL;
 }
 
@@ -164,7 +162,6 @@ SQL: CREATE_TABLE TableData
 	boolean = NULL;
 	groupingAtts = NULL;
 	attsToSelect = NULL;
-	refFile = NULL;
 	refTable= NULL;
 	createData = NULL;
 }
@@ -173,7 +170,6 @@ SQL: CREATE_TABLE TableData
 {
 	command = SELECT_TABLE;
 	
-	refFile = NULL;
 	refTable= NULL;
 	createData = NULL;
 };
