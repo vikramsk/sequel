@@ -117,18 +117,21 @@ SQL: CREATE_TABLE TableData
 
 | INSERT Insertion
 {
+	command = INSERT_INTO;
+
 	finalFunction = NULL;
 	tables = NULL;
 	boolean = NULL;
 	groupingAtts = NULL;
 	attsToSelect = NULL;
 	createData = NULL;
-	
-	command = INSERT_INTO;
 }
 
 | DROP_TABLE Name
 {	
+	command = DROP;
+	refTable= $2;
+
 	finalFunction = NULL;
 	tables = NULL;
 	boolean = NULL;
@@ -136,28 +139,26 @@ SQL: CREATE_TABLE TableData
 	attsToSelect = NULL;
 	refFile = NULL;
 	createData = NULL;
-	
-	command = DROP;
-	refTable= $2;
 }
 
 | SET_OUTPUT Output
 {
+	command = OUTPUT_SET;
+	refFile = $2;
+
 	finalFunction = NULL;
 	tables = NULL;
 	boolean = NULL;
 	groupingAtts = NULL;
 	attsToSelect = NULL;
-	refFile = NULL;
 	refTable= NULL;
 	createData = NULL;
-	
-	command = OUTPUT_SET;
-	refFile = $2;
 }
 
 | EXIT
 {
+	command = QUIT_SQL;
+
 	finalFunction = NULL;
 	tables = NULL;
 	boolean = NULL;
@@ -166,8 +167,6 @@ SQL: CREATE_TABLE TableData
 	refFile = NULL;
 	refTable= NULL;
 	createData = NULL;
-
-	command = QUIT_SQL;
 }
 
 | QUERY

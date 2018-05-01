@@ -44,15 +44,33 @@ extern char *refFile;
 extern char *refTable; 
 
 int main() {
-    while (true) {
+    bool quit = false;
+    while (!quit) {
         yysqlparse();
-        if (command == QUIT_SQL) break;
-        QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
+        switch (command) {
+            case CREATE: {
+
+            } break;
+            case INSERT_INTO: {
+
+            } break;
+            case DROP: {
+
+            } break;
+            case OUTPUT_SET: {
+
+            } break;
+            case SELECT_TABLE: {
+                QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
                         attsToSelect, distinctAtts, distinctFunc);
-        QueryPlanner qp(qt);
-        qp.Create();
-        //qp.Print();
-        qp.Execute();
+                QueryPlanner qp(qt);
+                qp.Create();
+                //qp.Print();
+                qp.Execute();
+            } break;
+            case QUIT_SQL: {
+                quit = true;
+            } break;
+        }
     }
-    
 }
