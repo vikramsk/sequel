@@ -1,4 +1,5 @@
 #include <iostream>
+#include "cpptoml.h"
 #include "QueryPlanner.h"
 
 using namespace std;
@@ -51,12 +52,22 @@ void doSelect() {
     qp.Execute(outType);
 }
 
+void doDropTable() {
+    auto config = cpptoml::parse_file("config.toml");
+    auto dbfilePath = config->get_as<string>("dbfiles");
+    string dbFile = *dbfilePath + string(refTable); 
+    remove(string(dbFile + ".bin").c_str());
+    remove(string(dbFile + ".meta").c_str());
+    //TODO: delete table from catalog;
+}
+
 int main() {
     bool quit = false;
     refFile = NULL;
     outType = SET_NONE;
     while (!quit) {
         command = 0;
+        cout << "\nSQL> ";
         yysqlparse();
         switch (command) {
             case CREATE: {
@@ -66,7 +77,8 @@ int main() {
 
             } break;
             case DROP: {
-
+                doDropTable();
+                cout << "\nDropped " << refTable << " table.\n";
             } break;
             case OUTPUT_SET: {
                 cout << "\nOutput mode has been set!\n";
