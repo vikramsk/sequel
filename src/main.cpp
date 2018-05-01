@@ -22,26 +22,37 @@ extern struct NameList *groupingAtts;
 // the set of attributes in the SELECT (NULL if no such atts)
 extern struct NameList *attsToSelect;
 
+// data associated with creating a Table
+extern struct CreateTable* createData; 
+
 // 1 if there is a DISTINCT in a non-aggregate query 
 extern int distinctAtts; 
 
 // 1 if there is a DISTINCT in an aggregate query
 extern int distinctFunc;
 
-int main() {
-    // while (true) {
-    //     yysqlparse();
-    //     QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
-    //                    attsToSelect, distinctAtts, distinctFunc);
-    //     QueryPlanner qp(qt);
-    //     qp.Create();
-    // }
+// Says whether it is a create table, insert, drop table, set output, or select
+extern int command;
 
-    yysqlparse();
-    QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
-                    attsToSelect, distinctAtts, distinctFunc);
-    QueryPlanner qp(qt);
-    qp.Create();
-    //qp.Print();
-    qp.Execute();
+// The type of the output
+extern int outType;
+
+// a referenced file
+extern char *refFile;
+
+// a referenced table
+extern char *refTable; 
+
+int main() {
+    while (true) {
+        yysqlparse();
+        if (command == QUIT_SQL) break;
+        QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
+                        attsToSelect, distinctAtts, distinctFunc);
+        QueryPlanner qp(qt);
+        qp.Create();
+        //qp.Print();
+        qp.Execute();
+    }
+    
 }

@@ -16,7 +16,6 @@
 	struct AndList *boolean; // the predicate in the WHERE clause
 	struct NameList *groupingAtts; // grouping atts (NULL if no grouping)
 	struct NameList *attsToSelect; // the set of attributes in the SELECT (NULL if no such atts)
-	struct NameList *attsToCreate; // the set of attributes in the SELECT (NULL if no such atts)
 	struct CreateTable* createData; // data associated with creating a Table
 	int distinctAtts; // 1 if there is a DISTINCT in a non-aggregate query 
 	int distinctFunc;  // 1 if there is a DISTINCT in an aggregate query
@@ -128,7 +127,7 @@ SQL: CREATE_TABLE TableData
 	command = INSERT_INTO;
 }
 
-| DROP_TABLE Name ';'
+| DROP_TABLE Name
 {	
 	finalFunction = NULL;
 	tables = NULL;
@@ -142,7 +141,7 @@ SQL: CREATE_TABLE TableData
 	refTable= $2;
 }
 
-| SET_OUTPUT Output ';'
+| SET_OUTPUT Output
 {
 	finalFunction = NULL;
 	tables = NULL;
@@ -157,7 +156,7 @@ SQL: CREATE_TABLE TableData
 	refFile = $2;
 }
 
-| EXIT ';'
+| EXIT
 {
 	finalFunction = NULL;
 	tables = NULL;
@@ -180,7 +179,7 @@ SQL: CREATE_TABLE TableData
 	createData = NULL;
 };
 
-TableData: Name '(' AttList ')' AS HEAP ';'
+TableData: Name '(' AttList ')' AS HEAP
 {
 	$$ = (struct CreateTable*) malloc (sizeof (struct CreateTable));
 	refTable= $1;
@@ -189,7 +188,7 @@ TableData: Name '(' AttList ')' AS HEAP ';'
 	$$->sort = NULL;
 }
 
-| Name '(' AttList ')' AS SORTED NameList ';'
+| Name '(' AttList ')' AS SORTED NameList
 {
 	$$ = (struct CreateTable*) malloc (sizeof (struct CreateTable));
 	refTable= $1;
@@ -198,19 +197,19 @@ TableData: Name '(' AttList ')' AS HEAP ';'
 	$$->sort = $7;
 };
 
-Insertion: Name INTO Name ';'
+Insertion: Name INTO Name
 {
 	refFile = $1;
 	refTable = $3;
 }
 
-| QualifiedName INTO Name ';'
+| QualifiedName INTO Name
 {
 	refFile = $1;
 	refTable = $3;
 }
 
-| FileName INTO Name ';'
+| FileName INTO Name
 {
 	refFile = $1;
 	refTable = $3;
@@ -291,14 +290,14 @@ Output: STDOUT
 	outType = SET_FILE;
 };
 
-QUERY: SELECT WhatIWant FROM Tables WHERE AndList ';'
+QUERY: SELECT WhatIWant FROM Tables WHERE AndList
 {
 	tables = $4;
 	boolean = $6;	
 	groupingAtts = NULL;
 }
 
-| SELECT WhatIWant FROM Tables WHERE AndList GROUP BY Atts ';'
+| SELECT WhatIWant FROM Tables WHERE AndList GROUP BY Atts
 {
 	tables = $4;
 	boolean = $6;	

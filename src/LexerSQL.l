@@ -104,8 +104,6 @@ void close_sql_parser () { yy_delete_buffer (yysql_buf_state); }
 
 ","    	        return(',');
 
-";"				return(';');
-
 -?[0-9]+ 	    {yysqllval.actualChars = strdup(yysqltext);
   			return(Int); 
 		        }
