@@ -15,7 +15,7 @@ TEST(QueryPlanTest, Query1) {
    yysqlparse();
    close_sql_parser();
    QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                  distinctAtts, distinctFunc);
+                  distinctAtts, distinctFunc, NULL);
    QueryPlanner qp(qt);
    qp.Create();
    qp.Print();
@@ -31,7 +31,7 @@ TEST(QueryPlanTest, Query2) {
     yysqlparse();
     close_sql_parser();
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
+                   distinctAtts, distinctFunc, NULL);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Print();
@@ -47,7 +47,7 @@ TEST(QueryPlanTest, Query3) {
     yysqlparse();
     close_sql_parser();
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
+                   distinctAtts, distinctFunc, NULL);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Print();
@@ -63,7 +63,7 @@ TEST(QueryPlanTest, Query4) {
     yysqlparse();
     close_sql_parser();
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
+                   distinctAtts, distinctFunc, NULL);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Print();
@@ -80,7 +80,7 @@ TEST(QueryPlanTest, Query5) {
     yysqlparse();
     close_sql_parser();
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
+                   distinctAtts, distinctFunc, NULL);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Print();
@@ -94,7 +94,7 @@ TEST(QueryPlanTest, Query6) {
     yysqlparse();
     close_sql_parser();
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
+                   distinctAtts, distinctFunc, NULL);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Print();
@@ -111,7 +111,7 @@ TEST(QueryPlanTest, Query7) {
     yysqlparse();
     close_sql_parser();
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
+                   distinctAtts, distinctFunc, NULL);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Print();
@@ -129,7 +129,7 @@ TEST(QueryPlanTest, Query8) {
     yysqlparse();
     close_sql_parser();
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
+                   distinctAtts, distinctFunc, NULL);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Print();
@@ -146,7 +146,7 @@ TEST(QueryPlanTest, Query9) {
     yysqlparse();
     close_sql_parser();
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
+                   distinctAtts, distinctFunc, NULL);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Print();
@@ -161,7 +161,7 @@ TEST(QueryPlanTest, Query10) {
     yysqlparse();
     close_sql_parser();
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc);
+                   distinctAtts, distinctFunc, NULL);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Print();
