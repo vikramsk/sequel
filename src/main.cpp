@@ -1,6 +1,6 @@
 #include <iostream>
-#include "cpptoml.h"
 #include "QueryPlanner.h"
+#include "cpptoml.h"
 
 using namespace std;
 
@@ -24,10 +24,10 @@ extern struct NameList *groupingAtts;
 extern struct NameList *attsToSelect;
 
 // data associated with creating a Table
-extern struct CreateTable* createData; 
+extern struct CreateTable *createData;
 
-// 1 if there is a DISTINCT in a non-aggregate query 
-extern int distinctAtts; 
+// 1 if there is a DISTINCT in a non-aggregate query
+extern int distinctAtts;
 
 // 1 if there is a DISTINCT in an aggregate query
 extern int distinctFunc;
@@ -42,11 +42,11 @@ extern int outType;
 extern char *refFile;
 
 // a referenced table
-extern char *refTable; 
+extern char *refTable;
 
 void doSelect() {
-    QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
-                        attsToSelect, distinctAtts, distinctFunc, refFile);
+    QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
+                   distinctAtts, distinctFunc, refFile);
     QueryPlanner qp(qt);
     qp.Create();
     qp.Execute(outType);
@@ -55,10 +55,10 @@ void doSelect() {
 void doDropTable() {
     auto config = cpptoml::parse_file("config.toml");
     auto dbfilePath = config->get_as<string>("dbfiles");
-    string dbFile = *dbfilePath + string(refTable); 
+    string dbFile = *dbfilePath + string(refTable);
     remove(string(dbFile + ".bin").c_str());
     remove(string(dbFile + ".meta").c_str());
-    //TODO: delete table from catalog;
+    // TODO: delete table from catalog;
 }
 
 int main() {
@@ -71,10 +71,8 @@ int main() {
         yysqlparse();
         switch (command) {
             case CREATE: {
-
             } break;
             case INSERT_INTO: {
-
             } break;
             case DROP: {
                 doDropTable();

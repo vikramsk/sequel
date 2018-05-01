@@ -32,25 +32,25 @@ static const int NAME = 4;
 
 // Used by CREATE TABLE
 struct CreateTable {
-	// The type of database used to hold the table (HEAP or SORTED)
-	int type;
+    // The type of database used to hold the table (HEAP or SORTED)
+    int type;
 
-	// The list of attributes
-	struct AttDesc *atts;
+    // The list of attributes
+    struct AttDesc *atts;
 
-	// The list of attributes that will be sorted on (in reverse order)
-	struct NameList *sort;
+    // The list of attributes that will be sorted on (in reverse order)
+    struct NameList *sort;
 };
 
 // The description of an attribute
 struct AttDesc {
-	// Int, Double, or String
-	int type;
+    // Int, Double, or String
+    int type;
 
-	// The attributes name
-	char *name;
+    // The attributes name
+    char *name;
 
-	struct AttDesc *next;
+    struct AttDesc *next;
 };
 
 struct TableList {
