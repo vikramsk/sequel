@@ -44,6 +44,9 @@ extern char *refFile;
 // a referenced table
 extern char *refTable;
 
+string dbfilesDir;
+string catalogFile;
+
 void doSelect() {
     QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
                    distinctAtts, distinctFunc, refFile);
@@ -53,18 +56,42 @@ void doSelect() {
 }
 
 void doDropTable() {
+    string binFile = dbfilesDir + string(refTable) + ".bin";
+    ifstream stream(binFile);
+    if (!stream.good()) {
+        cout << refTable << " table does not exist.";
+    } else {
+        remove(binFile.c_str());
+        remove(string(dbfilesDir + string(refTable) + ".meta").c_str());
+        cout << "\nDropped " << refTable << " table.\n";
+    }
+    //TODO: delete table from catalog;
+    // 1. Delete from map, 2. perform write out
+}
+
+void doInsertIntoTable() {
+    DBFile dbfile;
+    string binFileName = dbfilesDir + string(refTable) + ".bin";
+    Schema sch(catalogFile.c_str(),refTable);
+    dbfile.Open(binFileName.c_str());
+    dbfile.Load(sch, refFile);
+}
+
+void initMain() {
+    refFile = NULL;
+    outType = SET_NONE;
     auto config = cpptoml::parse_file("config.toml");
+
     auto dbfilePath = config->get_as<string>("dbfiles");
-    string dbFile = *dbfilePath + string(refTable);
-    remove(string(dbFile + ".bin").c_str());
-    remove(string(dbFile + ".meta").c_str());
-    // TODO: delete table from catalog;
+    dbfilesDir = *dbfilePath;
+
+    auto catalogFilePath = config->get_as<string>("catalog");
+    catalogFile = *catalogFilePath;
 }
 
 int main() {
+    initMain();
     bool quit = false;
-    refFile = NULL;
-    outType = SET_NONE;
     while (!quit) {
         command = 0;
         cout << "\nSQL> ";
@@ -73,10 +100,10 @@ int main() {
             case CREATE: {
             } break;
             case INSERT_INTO: {
+                doInsertIntoTable();
             } break;
             case DROP: {
                 doDropTable();
-                cout << "\nDropped " << refTable << " table.\n";
             } break;
             case OUTPUT_SET: {
                 cout << "\nOutput mode has been set!\n";
