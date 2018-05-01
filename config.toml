@@ -1,4 +1,5 @@
 data = "data/10M/"
 dbfiles = "build/dbfiles/"
+outputfiles = "build/outputfiles/"
 catalog = "data/catalog"
 stats = "data/stats"

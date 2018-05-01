@@ -53,7 +53,7 @@ class Node {
 
     ~Node() {}
 
-    string getFilePath();
+    string getFilePath(string dirPath);
     int clear_pipe(bool print);
     void Print(int &inPipeL_ID, int &inPipeR_ID, int &outPipe_ID);
     void Execute();

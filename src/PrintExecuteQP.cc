@@ -153,7 +153,8 @@ void Node::Execute() {
             relOp->Use_n_Pages(bufferSize);
 
             DBFile *dbfile = new DBFile();
-            string fpath = getFilePath();
+            
+            string fpath = getFilePath("dbfiles");
             dbfile->Open(fpath.c_str());
 
             SelectFile *SF = dynamic_cast<SelectFile *>(relOp);
@@ -191,7 +192,8 @@ void Node::Execute() {
             relOp = new WriteOut();
             relOp->Use_n_Pages(bufferSize);
             
-            FILE *writeFile = fopen(fileName.c_str(), "w");
+            string fpath = getFilePath("outputfiles");
+            FILE *writeFile = fopen(fpath.c_str(), "w");
 
             WriteOut *W = dynamic_cast<WriteOut *>(relOp);
             W->Run(*inPipeL, writeFile, *outSchema);
@@ -199,9 +201,9 @@ void Node::Execute() {
     }
 }
 
-string Node::getFilePath() {
+string Node::getFilePath(string dirName) {
     auto config = cpptoml::parse_file("config.toml");
-    auto dbfileDir = config->get_as<string>("dbfiles");
-    string fpath = *dbfileDir + fileName;
+    auto dirPath = config->get_as<string>(dirName);
+    string fpath = *dirPath + fileName;
     return fpath;
 }
