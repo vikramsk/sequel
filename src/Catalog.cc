@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "cpptoml.h"
 
 using namespace std;
@@ -31,7 +32,7 @@ void Catalog::parseCatalog() {
             while (catalog >> line) {
                 if (!line.compare("END")) break;
 
-                Attribute *att = new Attribute();
+                CatAttribute *att = new CatAttribute();
                 att->name = line;
                 catalog >> att->type;
                 relAttributes[relName].push_back(att);
