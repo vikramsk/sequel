@@ -1,6 +1,9 @@
+#include <string>
 #include <unordered_map>
 
-class Attribute {
+using namespace std;
+
+class CatAttribute {
    private:
     string name;
     string type;
@@ -9,11 +12,14 @@ class Attribute {
 };
 
 class Catalog {
-    string fileName;
+   private:
+    char* fileName;
 
-    unordered_map < string, vector<Attribute> attributes;
+    void parseCatalog();
 
    public:
-    Catalog(string fileName);
-    Write();
+    unordered_map<string, vector<CatAttribute*>> relAttributes;
+
+    Catalog();
+    void Write();
 };
