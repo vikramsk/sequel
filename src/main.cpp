@@ -43,9 +43,19 @@ extern char *refFile;
 // a referenced table
 extern char *refTable; 
 
+void doSelect() {
+    QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
+                        attsToSelect, distinctAtts, distinctFunc, refFile);
+    QueryPlanner qp(qt);
+    qp.Create();
+    qp.Execute(outType);
+}
+
 int main() {
     bool quit = false;
+    outType = SET_NONE;
     while (!quit) {
+        command = 0;
         yysqlparse();
         switch (command) {
             case CREATE: {
@@ -58,15 +68,10 @@ int main() {
 
             } break;
             case OUTPUT_SET: {
-
+                cout << "\nOutput mode has been set!\n";
             } break;
             case SELECT_TABLE: {
-                QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
-                        attsToSelect, distinctAtts, distinctFunc);
-                QueryPlanner qp(qt);
-                qp.Create();
-                //qp.Print();
-                qp.Execute();
+                doSelect();
             } break;
             case QUIT_SQL: {
                 quit = true;

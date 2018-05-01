@@ -107,12 +107,21 @@ int Node::clear_pipe(bool print) {
     return cnt;
 }
 
-void QueryPlanner::Execute() {
-    // TODO: Read output pipe of ptr based on the output mode set by user
-    Node *ptr = root;
-    recurseAndExecute(ptr);
-    int cnt = ptr->clear_pipe(true);
-    cout << "\n\n query returned " << cnt << " records \n";
+void QueryPlanner::Execute(int outType) {
+    
+    if (outType == SET_NONE) {
+        Print();
+    } else if (outType == SET_STDOUT) {
+        Node *ptr = root;
+        recurseAndExecute(ptr);
+        int cnt = ptr->clear_pipe(true);
+        cout << "\n query returned " << cnt << " records \n";
+    } else { // tokens.outType == SET_FILE
+        Node *ptr = root;
+        recurseAndExecute(ptr);
+        ptr->relOp->WaitUntilDone();
+        cout << "\n query results have been written to file - " << ptr->fileName << endl;
+    }   
 }
 
 void QueryPlanner::recurseAndExecute(Node *ptr) {
@@ -177,6 +186,15 @@ void Node::Execute() {
 
             DuplicateRemoval *D = dynamic_cast<DuplicateRemoval *>(relOp);
             D->Run(*inPipeL, *outPipe, *outSchema);
+        } break;
+        case WRITEOUT: {
+            relOp = new WriteOut();
+            relOp->Use_n_Pages(bufferSize);
+            
+            FILE *writeFile = fopen(fileName.c_str(), "w");
+
+            WriteOut *W = dynamic_cast<WriteOut *>(relOp);
+            W->Run(*inPipeL, writeFile, *outSchema);
         } break;
     }
 }

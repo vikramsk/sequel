@@ -33,6 +33,8 @@ void QueryPlanner::Create() {
     if (tokens.andList) processAndList(relAliasMap);
 
     processAggFuncs();
+
+    if (tokens.outFileName) createWriteOutNode();
 }
 
 void QueryPlanner::processAggFuncs() {
@@ -74,6 +76,15 @@ void QueryPlanner::processAggFuncs() {
                 createProjectNode();
         }
     }
+}
+
+void QueryPlanner::createWriteOutNode() {
+    Node *newRoot = new Node(WRITEOUT);
+    newRoot->leftLink = root;
+    newRoot->inPipeL = root->outPipe;
+    newRoot->outSchema = root->outSchema;
+    newRoot->fileName = string(tokens.outFileName);
+    root = newRoot;
 }
 
 struct orListComparator {
