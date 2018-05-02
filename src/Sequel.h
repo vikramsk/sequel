@@ -8,7 +8,7 @@ class Sequel {
     Catalog catalog;
 
     void performProjection(Pipe &inPipe, Pipe &outPipe, int attIndex,
-                           int numAttsInput, Schema *schema, char *relName);
+                           int numAttsInput, Schema *&schema, char *relName);
 
     void performSelection(string relName, Pipe &outPipe);
 

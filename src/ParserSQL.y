@@ -67,6 +67,7 @@
 %token SELECT
 %token GROUP 
 %token DISTINCT
+%token FOR
 %token BY
 %token FROM
 %token WHERE
@@ -115,7 +116,7 @@ SQL: CREATE_TABLE TableData
 	attsToSelect = NULL;
 }
 
-| UPDATE_STATS 'for' Name 
+| UPDATE_STATS FOR Name 
 {
 	command = UPDATE;
 	refTable= $3;

@@ -80,6 +80,8 @@ void close_sql_parser () { yy_delete_buffer (yysql_buf_state); }
 
 "UPDATE STATISTICS"		return(UPDATE_STATS);
 
+"FOR"			return(FOR);
+
 "BY"			return(BY);
 
 "OR"			return(OR);

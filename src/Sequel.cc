@@ -43,11 +43,13 @@ void Sequel::performSelection(string relName, Pipe &outPipe) {
     selFile->Use_n_Pages(100);
     Record literal;
     CNF cnf;
+    Schema sch(catalog.fileName, relName.c_str());
+    cnf.GrowFromParseTree(NULL, &sch, literal);
     selFile->Run(dbfile, outPipe, cnf, literal);
 }
 
 void Sequel::performProjection(Pipe &inPipe, Pipe &outPipe, int attIndex,
-                               int numAttsInput, Schema *schema,
+                               int numAttsInput, Schema *&schema,
                                char *relName) {
     int *attsToKeep = new int[1]{attIndex};
     Project *proj = new Project();
@@ -87,17 +89,18 @@ void Sequel::doUpdate(char *refTable) {
     while (recPipe.Remove(&dummy)) {
         numTuples++;
     }
+    stats.AddRel(refTable, (double)numTuples);
     int numAtts = catalog.relAttributes[relName].size();
     for (int i = 0; i < numAtts; i++) {
         Pipe selPipe(5000);
         performSelection(relName, selPipe);
 
         Pipe projPipe(5000);
-        Schema schema;
-        performProjection(selPipe, projPipe, i, numAtts, &schema, refTable);
+        Schema *schema;
+        performProjection(selPipe, projPipe, i, numAtts, schema, refTable);
 
         Pipe outPipe(5000);
-        performDistinct(projPipe, outPipe, schema);
+        performDistinct(projPipe, outPipe, *schema);
 
         Record rec;
         int distinctCount = 0;
@@ -108,6 +111,7 @@ void Sequel::doUpdate(char *refTable) {
         stats.AddAtt(refTable, attName, distinctCount);
     }
     stats.Write(statsPath);
+    cout << endl << "Statistics updated for table " << relName << endl;
 }
 
 void Sequel::doInsert(char *refTable, char *refFile) {
