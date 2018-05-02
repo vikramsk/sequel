@@ -123,11 +123,11 @@ void QueryPlanner::Execute(int outType) {
         Node *ptr = root;
         recurseAndExecute(ptr);
         ptr->relOp->WaitUntilDone();
-        cout << "\n Query results have been written to file - " << ptr->fileName;
+        cout << "\n Query results have been written to file: " << ptr->fileName;
     }
     auto stop = high_resolution_clock::now();
     duration<float> duration = stop - start;
-    cout << "\nTime taken by query: " << setprecision(2) << fixed << duration.count() << " seconds." << endl;
+    cout << "\n Time taken by query: " << setprecision(2) << fixed << duration.count() << " seconds." << endl;
 }
 
 void QueryPlanner::recurseAndExecute(Node *ptr) {
