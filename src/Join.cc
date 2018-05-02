@@ -52,7 +52,7 @@ void mergeEqualRecords(Record &recLeft, Record &recRight, Pipe &sortedL,
 
 void mergeSortJoin(Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe,
                    OrderMaker &orderL, OrderMaker &orderR) {
-    Pipe sortedL(100), sortedR(100);
+    Pipe sortedL(5000), sortedR(5000);
     BigQ qLeft(inPipeL, sortedL, orderL, 100);
     BigQ qRight(inPipeR, sortedR, orderR, 100);
 

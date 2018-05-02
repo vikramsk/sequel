@@ -96,7 +96,7 @@ void *DuplicateRemoval::bigQDuplicateRemoval(void *voidArgs) {
     Record currentRec;
     Record previousRec;
     ComparisonEngine comp;
-    Pipe sortedOutput(100);  // this buffer size is based on the test input
+    Pipe sortedOutput(5000);  // this buffer size is based on the test input
     OrderMaker om(args->schema);
     BigQ bigQInstance(*(args->in), sortedOutput, om, 1);
 
@@ -112,7 +112,7 @@ void *DuplicateRemoval::bigQDuplicateRemoval(void *voidArgs) {
         // Else write previous record to output and store current in previous
         args->out->Insert(&previousRec);
         previousRec.Consume(&currentRec);
-    } 
+    }
     if (previousRec.bits) {
         // write previous record to output
         args->out->Insert(&previousRec);

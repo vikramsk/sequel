@@ -184,7 +184,7 @@ void QueryPlanner::performCrossJoins() {
     }
 
     Node *joinNode = new Node(JOIN);
-    joinNode->outPipe = new Pipe(100);
+    joinNode->outPipe = new Pipe(5000);
     joinNode->inPipeL = minNodes.first->outPipe;
     joinNode->leftLink = minNodes.first;
     joinNode->inPipeR = minNodes.second->outPipe;
