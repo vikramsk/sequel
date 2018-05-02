@@ -1,6 +1,9 @@
 #include <iostream>
+#include <chrono>
 #include "QueryPlanner.h"
 #include "cpptoml.h"
+
+using namespace std::chrono;
 
 int bufferSize = 100;  // pages of memory allowed for operations
 
@@ -108,20 +111,23 @@ int Node::clear_pipe(bool print) {
 }
 
 void QueryPlanner::Execute(int outType) {
-    
+    auto start = high_resolution_clock::now();
     if (outType == SET_NONE) {
         Print();
     } else if (outType == SET_STDOUT) {
         Node *ptr = root;
         recurseAndExecute(ptr);
         int cnt = ptr->clear_pipe(true);
-        cout << "\n query returned " << cnt << " records \n";
+        cout << "\n Query returned " << cnt << " records.";
     } else { // tokens.outType == SET_FILE
         Node *ptr = root;
         recurseAndExecute(ptr);
         ptr->relOp->WaitUntilDone();
-        cout << "\n query results have been written to file - " << ptr->fileName << endl;
-    }   
+        cout << "\n Query results have been written to file - " << ptr->fileName;
+    }
+    auto stop = high_resolution_clock::now();
+    duration<float> duration = stop - start;
+    cout << "\nTime taken by query: " << round(duration.count()) << " seconds." << endl;
 }
 
 void QueryPlanner::recurseAndExecute(Node *ptr) {
