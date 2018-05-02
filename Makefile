@@ -34,7 +34,7 @@ $(BUILD_DIR)/%.cc.o: %.cc
 
 all: main test.out test1.out test2.out test3.out testsuite
 
-main: $(OBJS) build/src/yysql.tab.o build/src/lex.yysql.o build/src/main.o
+main: $(OBJS) build/src/yysql.tab.o build/src/lex.yysql.o build/src/main.o dbfolder
 	$(CC) $(CXXFLAGS) $(OBJS) build/src/main.o  build/src/yysql.tab.o build/src/lex.yysql.o -o build/$@
 
 test.out: $(OBJS) build/src/y.tab.o build/src/yyfunc.tab.o build/src/lex.yy.o build/src/lex.yyfunc.o build/src/test.o dbfolder
@@ -104,6 +104,7 @@ build/src/lex.yy.o: src/Lexer.l
 
 dbfolder: 
 	mkdir -p build/dbfiles
+	mkdir -p build/outputfiles
 
 GTEST_DIR = include/googletest
 
