@@ -1,5 +1,6 @@
 #include "Sequel.h"
 #include "Catalog.h"
+#include "ParseTree.h"
 #include "QueryPlanner.h"
 #include "cpptoml.h"
 
@@ -46,6 +47,37 @@ void Sequel::doCreate(CreateTable *createData, char *refTable) {
     if (catalog.relAttributes.count(relName) > 0) {
         cout << "Table: " << relName << " already exists in the database."
              << endl;
+        return;
+    }
+
+    AttDesc *attPtr = createData->atts;
+    while (attPtr) {
+        string type;
+        switch (attPtr->type) {
+            case DOUBLE: {
+                type = "Double";
+            } break;
+            case INT: {
+                type = "Int";
+            } break;
+            case STRING: {
+                type = "String";
+            } break;
+        }
+        CatAttribute *att = new CatAttribute();
+        string attName(attPtr->name);
+        string attType(type);
+        att->name = attName;
+        att->type = attType;
+        catalog.relAttributes[relName].push_back(att);
+        attPtr = attPtr->next;
+    }
+    catalog.Write();
+    string filePath = dbFilesDir + string(refTable) + ".bin";
+    if (createData->type == HEAP_DB) {
+        DBFile dbfile;
+        dbfile.Create(filePath.c_str(), heap, NULL);
+        dbfile.Close();
         return;
     }
 }

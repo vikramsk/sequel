@@ -7,11 +7,9 @@
 using namespace std;
 
 class CatAttribute {
-   private:
+   public:
     string name;
     string type;
-
-    friend class Catalog;
 };
 
 class Catalog {
