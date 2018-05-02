@@ -1,3 +1,5 @@
+#ifndef Catalog_H
+#define Catalog_H
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -14,13 +16,14 @@ class CatAttribute {
 
 class Catalog {
    private:
-    char* fileName;
-
     void parseCatalog();
 
    public:
+    char* fileName;
+
     unordered_map<string, vector<CatAttribute*>> relAttributes;
 
     Catalog();
     void Write();
 };
+#endif

@@ -1,5 +1,6 @@
 #include <iostream>
 #include "QueryPlanner.h"
+#include "Sequel.h"
 #include "cpptoml.h"
 
 using namespace std;
@@ -47,39 +48,29 @@ extern char *refTable;
 string dbfilesDir;
 string catalogFile;
 
-void doSelect() {
-    QueryTokens qt(finalFunction, tables, boolean, groupingAtts, attsToSelect,
-                   distinctAtts, distinctFunc, refFile);
-    QueryPlanner qp(qt);
-    qp.Create();
-    qp.Execute(outType);
-}
+void doSelect() {}
 
 void doDropTable() {
     string binFile = dbfilesDir + string(refTable) + ".bin";
     ifstream stream(binFile);
     if (!stream.good()) {
-        cout << refTable << " table does not exist.";
+        cout << endl << refTable << " table does not exist.";
     } else {
         remove(binFile.c_str());
         remove(string(dbfilesDir + string(refTable) + ".meta").c_str());
         cout << "\nDropped " << refTable << " table.\n";
     }
-    //TODO: delete table from catalog;
-    // 1. Delete from map, 2. perform write out
 }
 
 void doInsertIntoTable() {
     DBFile dbfile;
     string binFileName = dbfilesDir + string(refTable) + ".bin";
-    Schema sch(catalogFile.c_str(),refTable);
+    Schema sch(catalogFile.c_str(), refTable);
     dbfile.Open(binFileName.c_str());
     dbfile.Load(sch, refFile);
 }
 
 void initMain() {
-    refFile = NULL;
-    outType = SET_NONE;
     auto config = cpptoml::parse_file("config.toml");
 
     auto dbfilePath = config->get_as<string>("dbfiles");
@@ -90,30 +81,36 @@ void initMain() {
 }
 
 int main() {
-    initMain();
+    // initMain();
+    refFile = NULL;
+    outType = SET_NONE;
     bool quit = false;
-    while (!quit) {
-        command = 0;
-        cout << "\nSQL> ";
-        yysqlparse();
-        switch (command) {
-            case CREATE: {
-            } break;
-            case INSERT_INTO: {
-                doInsertIntoTable();
-            } break;
-            case DROP: {
-                doDropTable();
-            } break;
-            case OUTPUT_SET: {
-                cout << "\nOutput mode has been set!\n";
-            } break;
-            case SELECT_TABLE: {
-                doSelect();
-            } break;
-            case QUIT_SQL: {
-                quit = true;
-            } break;
-        }
+    Sequel sequel;
+    //    while (!quit) {
+    command = 0;
+    cout << "\nSQL> ";
+    yysqlparse();
+    switch (command) {
+        case CREATE: {
+            sequel.doCreate(createData, refTable);
+        } break;
+        case INSERT_INTO: {
+            sequel.doInsert(refTable, refFile);
+        } break;
+        case DROP: {
+            sequel.doDrop(refTable);
+        } break;
+        case OUTPUT_SET: {
+            cout << "\nOutput mode has been set!\n";
+        } break;
+        case SELECT_TABLE: {
+            QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
+                           attsToSelect, distinctAtts, distinctFunc, refFile);
+            sequel.doSelect(qt, outType);
+        } break;
+        case QUIT_SQL: {
+            quit = true;
+        } break;
     }
+    //   }
 }

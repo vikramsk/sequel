@@ -1,16 +1,17 @@
-#include <map>
+#ifndef QueryPlanner_H
+#define QueryPlanner_H
 #include <list>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include "Defs.h"
 #include "Function.h"
 #include "ParseTree.h"
 #include "Pipe.h"
 #include "RelOp.h"
 #include "Schema.h"
 #include "Statistics.h"
-
-typedef enum { JOIN, SELFILE, SELPIPE, PROJECT, SUM, GROUPBY, DISTINCT, WRITEOUT } opType;
 
 class RelOrPair {
    public:
@@ -72,20 +73,21 @@ class QueryTokens {
     bool distinctWithAgg;
     unordered_map<string, vector<RelOrPair *>> relClauses;
     list<RelOrPair *> relOrPairs;
-    int pipeSize; // buffer sz allowed for each pipe
+    int pipeSize;  // buffer sz allowed for each pipe
     char *outFileName;
 
     void createRelOrPairs();
 
    public:
     QueryTokens(FuncOperator *fo, TableList *t, AndList *al, NameList *ga,
-                NameList *ats, int &distinctAtts, int &distinctFunc, char *outFile) {
+                NameList *ats, int &distinctAtts, int &distinctFunc,
+                char *outFile) {
         aggFunction = fo;
         tables = t;
         andList = al;
         groupingAtts = ga;
         attsToSelect = ats;
-        pipeSize = 5000; // TODO: Accept as a parameter in the constructor
+        pipeSize = 5000;  // TODO: Accept as a parameter in the constructor
         outFileName = outFile;
 
         // 1 if there is a DISTINCT in a non-aggregate query
@@ -130,7 +132,8 @@ class QueryPlanner {
     void createDupRemovalNode();
     void createWriteOutNode();
     int *setAttributesList(int &numAttsOut, Schema *&newSchema);
-    void addAttsToList(map<int, Attribute> &finalAtts, int &numAttsOut, NameList *selAttribute);
+    void addAttsToList(map<int, Attribute> &finalAtts, int &numAttsOut,
+                       NameList *selAttribute);
     NameList *extractAttsFromFunc(FuncOperator *root, NameList *rest);
     Schema *setupGroupOrder(Schema *&newSchema);
     int recurseAndPrint(Node *ptr, int &outPipe_ID);
@@ -143,3 +146,5 @@ class QueryPlanner {
     void Print();
     void Execute(int outType);
 };
+
+#endif
