@@ -127,7 +127,7 @@ void QueryPlanner::Execute(int outType) {
     }
     auto stop = high_resolution_clock::now();
     duration<float> duration = stop - start;
-    cout << "\nTime taken by query: " << round(duration.count()) << " seconds." << endl;
+    cout << "\nTime taken by query: " << setprecision(2) << fixed << duration.count() << " seconds." << endl;
 }
 
 void QueryPlanner::recurseAndExecute(Node *ptr) {
