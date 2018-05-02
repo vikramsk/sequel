@@ -52,7 +52,8 @@ void Catalog::Write() {
         catalog << "BEGIN" << endl;
         catalog << rel.first << endl;
         catalog << rel.first << ".tbl" << endl;
-        for (auto &att : rel.second) {
+        for(auto rit = rbegin(rel.second); rit != rend(rel.second); ++rit) {
+            CatAttribute *att = *rit;
             catalog << att->name << " " << att->type << endl;
         }
         catalog << "END" << endl << endl;

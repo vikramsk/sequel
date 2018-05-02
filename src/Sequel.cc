@@ -23,11 +23,11 @@ void Sequel::doDrop(char *refTable) {
     string binFile = dbFilesDir + string(refTable) + ".bin";
     ifstream stream(binFile);
     if (!stream.good()) {
-        cout << endl << refTable << " table does not exist.";
+        cout << endl << "Table: " << refTable << " does not exist." << endl;
     } else {
         remove(binFile.c_str());
         remove(string(dbFilesDir + string(refTable) + ".meta").c_str());
-        cout << "\nDropped " << refTable << " table.\n";
+        cout << endl << "Dropped " << refTable << " table." << endl;
     }
     string relName(refTable);
     catalog.relAttributes.erase(relName);
@@ -40,13 +40,14 @@ void Sequel::doInsert(char *refTable, char *refFile) {
     Schema sch(catalog.fileName, refTable);
     dbfile.Open(binFileName.c_str());
     dbfile.Load(sch, refFile);
+    dbfile.Close();
+    cout << endl << "Loaded records into " << refTable << " table." << endl;
 }
 
 void Sequel::doCreate(CreateTable *createData, char *refTable) {
     string relName(refTable);
     if (catalog.relAttributes.count(relName) > 0) {
-        cout << "Table: " << relName << " already exists in the database."
-             << endl;
+        cout << endl << "Table: " << relName << " already exists in the database." << endl;
         return;
     }
 
@@ -78,6 +79,7 @@ void Sequel::doCreate(CreateTable *createData, char *refTable) {
         DBFile dbfile;
         dbfile.Create(filePath.c_str(), heap, NULL);
         dbfile.Close();
+        cout << endl << "Heap DB file created." << endl;
         return;
     }
 }
