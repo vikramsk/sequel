@@ -69,8 +69,12 @@ int main() {
             } break;
             case SELECT_TABLE: {
                 QueryTokens qt(finalFunction, tables, boolean, groupingAtts,
-                            attsToSelect, distinctAtts, distinctFunc, refFile);
+                               attsToSelect, distinctAtts, distinctFunc,
+                               refFile);
                 sequel.doSelect(qt, outType);
+            } break;
+            case UPDATE: {
+                sequel.doUpdate(refTable);
             } break;
             case QUIT_SQL: {
                 quit = true;

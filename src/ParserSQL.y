@@ -54,6 +54,7 @@
 %token CREATE_TABLE
 %token HEAP
 %token SORTED
+%token UPDATE_STATS
 %token INSERT
 %token INTO
 %token DROP_TABLE
@@ -112,6 +113,19 @@ SQL: CREATE_TABLE TableData
 	boolean = NULL;
 	groupingAtts = NULL;
 	attsToSelect = NULL;
+}
+
+| UPDATE_STATS 'for' Name 
+{
+	command = UPDATE;
+	refTable= $3;
+
+	finalFunction = NULL;
+	tables = NULL;
+	boolean = NULL;
+	groupingAtts = NULL;
+	attsToSelect = NULL;
+	createData = NULL;
 }
 
 | INSERT Insertion

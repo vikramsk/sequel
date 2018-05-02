@@ -20,6 +20,7 @@ static const int NAME = 4;
 #define OUTPUT_SET 4
 #define SELECT_TABLE 5
 #define QUIT_SQL 6
+#define UPDATE 7
 
 // Table types
 #define HEAP_DB 1

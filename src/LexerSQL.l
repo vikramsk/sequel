@@ -78,6 +78,8 @@ void close_sql_parser () { yy_delete_buffer (yysql_buf_state); }
 
 "DISTINCT"		return(DISTINCT);
 
+"UPDATE STATISTICS"		return(UPDATE_STATS);
+
 "BY"			return(BY);
 
 "OR"			return(OR);
